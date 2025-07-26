@@ -2,6 +2,9 @@
 
 このディレクトリには、GitHub CopilotやVS Code拡張機能向けの設定やプロンプト集を格納します。
 
+> [!NOTE]
+> `.github/README.md` というファイル名にした場合、GitHub のリポジトリトップページにこの README.md が表示されてしまうため、名前を `.github/README.github.md` とする。
+
 ## 含まれるファイル
 
 - `copilot-instructions.md` - GitHub Copilot向けプロジェクトガイダンス
