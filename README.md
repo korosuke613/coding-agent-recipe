@@ -2,22 +2,27 @@
 
 様々なAIコーディングエージェント（Claude Code、GitHub Copilot等）向けの便利なプロンプト、カスタムコマンド、設定を収集・管理するリポジトリです。
 
-## ⚙️ 便利設定
-
 ```
 .
 ├── .claude/            # Claude Code設定
 │   ├── agents/         # 使用中のエージェント設定
-│   ├── commands/       # 使用中のコマンド設定
-│   ├── hooks/          # 使用中のフック設定
+│   ├── commands/       # 使用中のカスタムスラッシュコマンド設定
+│   ├── hooks/          # 使用中のフック設定（通知、ファイル編集制限等）
 │   └── settings.json   # アクティブな設定ファイル
 ├── .github/            # GitHub Copilot設定とGitHub設定
+│   ├── prompts/        # GitHub Copilot Chat向けプロンプトファイル
 │   └── copilot-instructions.md  # GitHub Copilot向けガイダンス
 ├── .devcontainer/      # Development Container設定
+│   ├── .claude/        # devcontainer用Claude Code設定
+│   ├── devcontainer.json     # VSCode devcontainer設定
+│   ├── Dockerfile            # コンテナ環境定義
+│   └── init-firewall.sh      # セキュリティ制限スクリプト
 ├── CLAUDE.md           # Claude Code専用ガイダンス
 ├── README.md           # プロジェクト概要
 └── LICENSE             # ライセンスファイル
 ```
+
+## Claude Code
 
 ### 📦 Development containers
 
@@ -25,9 +30,9 @@
 
 - **[`devcontainer.json`](/.devcontainer/devcontainer.json)** - devcontainer の設定
 - **[`Dockerfile`](/.devcontainer/Dockerfile)** - devcontainer の Dockerfile
-- **[`init-firewall.sh`](/.devcontainer/init-firewall.sh)** - devcontainer 起動時に実行されるファイアウォール設定スクリプト
-- **`.claude`** - devcontainer 用の Claude Code 設定ディレクトリ
-  - **[`.claude/settings.json`](/.devcontainer/.claude/settings.json)** - devcontainer 用の Claude Code 設定ファイル
+- **[`init-firewall.sh`](/.devcontainer/init-firewall.sh)** - devcontainer 起動時に実行されるセキュリティ制限スクリプト
+- **`.claude/`** - devcontainer 用の Claude Code 設定ディレクトリ
+  - **[`.claude/settings.json`](/.devcontainer/.claude/settings.json)** - devcontainer 用の Claude Code 設定ファイル（権限制限付き）
 
 ### 🤖 Sub Agents
 
@@ -50,10 +55,14 @@
 [`.claude/hooks/`](/.claude/hooks/) に格納されている [Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) のスクリプト：
 
 - **[`block-file-edits.sh`](/.claude/hooks/block-file-edits.sh)** - 特定のファイルの編集を制限するフック
+- **[`notify-finish.sh`](/.claude/hooks/notify-finish.sh)** - Claude Codeのタスク完了時にデスクトップ通知を送信するフック
+- **[`notify-require.sh`](/.claude/hooks/notify-require.sh)** - Claude Codeからの通知を受信してデスクトップ通知を送信するフック
 
 設定ファイルは [`.claude/settings.json`](/.claude/settings.json) にあります。
 
-### 🤖 GitHub Copilot Prompt Files
+## GitHub Copilot
+
+### 🤖 Prompt Files
 
 [`.github/prompts/`](/.github/prompts/) に格納されているGitHub Copilot Chat向けプロンプトファイル（`.prompt.md`）：
 
@@ -62,19 +71,3 @@
 - **[`update-readme.prompt.md`](/.github/prompts/update-readme.prompt.md)** - READMEファイルの自動更新（`/update-readme`相当）
 
 VS Code Chatで `/create-branch`, `/create-commit`, `/update-readme` と入力して使用できます。使用方法の詳細は [`.github/prompts/README.md`](/.github/prompts/README.md) を参照してください。
-
-## 🤝 マルチプラットフォーム対応
-
-このリポジトリは複数のAIコーディングエージェントに対応しています：
-
-### 🔵 Claude Code
-- **カスタムスラッシュコマンド**: `.claude/commands/`
-- **サブエージェント**: `.claude/agents/`
-- **フック機能**: `.claude/hooks/`
-- **設定ファイル**: `.claude/settings.json`
-
-### 🟣 GitHub Copilot
-- **プロジェクトガイダンス**: `.github/copilot-instructions.md`
-- **プロンプトファイル**: `.github/prompts/` - Claude Codeコマンド相当の機能（`.prompt.md`形式）
-- **VS Code統合**: スラッシュコマンド（`/create-branch`等）での直接実行
-- **今後追加予定**: VS Code スニペット集
