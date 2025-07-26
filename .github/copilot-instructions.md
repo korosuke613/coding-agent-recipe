@@ -30,7 +30,7 @@
 
 ### Claude Code固有機能
 - **カスタムスラッシュコマンド**（`.claude/commands/`内）：
-  - `/create-branche` - git status/logを参考に適切なブランチ名で新ブランチ作成
+  - `/create-branch` - git status/logを参考に適切なブランチ名で新ブランチ作成
   - `/create-commit` - 変更内容からコンベンショナルコミット形式でコミット作成
   - `/update-readme` - プロジェクト構造に基づきREADMEを自動更新
 
@@ -53,7 +53,7 @@
 
 ## 開発フロー
 
-1. `/create-branche`でブランチ作成
+1. `/create-branch`でブランチ作成
 2. 機能やコマンドを実装・更新
 3. `/create-commit`でコミット作成
 4. READMEや設定の更新が必要な場合は`/update-readme`を実行

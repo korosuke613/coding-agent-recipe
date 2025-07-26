@@ -41,9 +41,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 このリポジトリでは以下のカスタムスラッシュコマンドが利用可能：
 
-### `/create-branche`
+### `/create-branch`
 現在の変更を元に新しいブランチを作成するコマンド
-- 実装ファイル: `.claude/commands/create-branche.md`
+- 実装ファイル: `.claude/commands/create-branch.md`
 - 機能: git status、git log、git branchの情報を参考にして適切なブランチ名でブランチを作成
 
 ### `/create-commit`
@@ -92,7 +92,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `git status` - 変更状況の確認
 - `git log --oneline` - コミット履歴の確認
 - `git branch` - ブランチ一覧の確認
-- `/create-branche` - 新しいブランチの作成（カスタムコマンド）
+- `/create-branch` - 新しいブランチの作成（カスタムコマンド）
 - `/create-commit` - コミットの作成（カスタムコマンド）
 - `/update-readme` - READMEファイルの更新（カスタムコマンド）
 
@@ -111,7 +111,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 開発フロー
 
-1. 新機能やコマンドを追加する際は `/create-branche` でブランチを作成
+1. 新機能やコマンドを追加する際は `/create-branch` でブランチを作成
 2. 変更後は `/create-commit` でコミットを作成
 3. コミットメッセージは日本語のコンベンショナルコミット形式で記載
 4. セキュリティ制限により、承認されたドメインのみアクセス可能

@@ -41,7 +41,7 @@
 
 [`.claude/commands/`](/.claude/commands/) に格納されている [Custom slash commands](https://docs.anthropic.com/en/docs/claude-code/slash-commands) のマークダウンファイル：
 
-- **[`/create-branche`](/.claude/commands/create-branche.md)** - 現在の変更を元に適切なブランチ名で新しいブランチを作成
+- **[`/create-branch`](/.claude/commands/create-branch.md)** - 現在の変更を元に適切なブランチ名で新しいブランチを作成
 - **[`/create-commit`](/.claude/commands/create-commit.md)** - 現在の変更を元にコンベンショナルコミット形式でコミットを作成
 - **[`/update-readme`](/.claude/commands/update-readme.md)** - プロジェクトのREADMEファイルを現在のコードベースに基づいて更新
 
@@ -57,7 +57,7 @@
 
 [`.github/prompts/`](/.github/prompts/) に格納されているGitHub Copilot Chat向けプロンプトファイル（`.prompt.md`）：
 
-- **[`create-branch.prompt.md`](/.github/prompts/create-branch.prompt.md)** - 適切なブランチ名で新しいブランチを作成（`/create-branche`相当）
+- **[`create-branch.prompt.md`](/.github/prompts/create-branch.prompt.md)** - 適切なブランチ名で新しいブランチを作成（`/create-branch`相当）
 - **[`create-commit.prompt.md`](/.github/prompts/create-commit.prompt.md)** - コンベンショナルコミット形式でコミット作成（`/create-commit`相当）
 - **[`update-readme.prompt.md`](/.github/prompts/update-readme.prompt.md)** - READMEファイルの自動更新（`/update-readme`相当）
 

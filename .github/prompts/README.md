@@ -6,7 +6,7 @@
 
 ### 🌿 [create-branch.prompt.md](./create-branch.prompt.md)
 - **目的**: 現在の変更を元に適切なブランチ名で新しいブランチを作成
-- **Claude Code相当**: `/create-branche`コマンド
+- **Claude Code相当**: `/create-branch`コマンド
 - **使用方法**: VS Code Chat画面で `/create-branch` と入力
 
 ### 📝 [create-commit.prompt.md](./create-commit.prompt.md)
