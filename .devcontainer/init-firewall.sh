@@ -55,6 +55,7 @@ for domain in \
     "registry.npmjs.org" \
     "api.anthropic.com" \
     "sentry.io" \
+    "www.vscode-unpkg.net" \
     "statsig.anthropic.com" \
     "statsig.com"; do
     echo "Resolving $domain..."
