@@ -23,10 +23,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   └── settings.json   # アクティブな設定ファイル
 ├── .devcontainer/      # Development Container設定
 │   ├── devcontainer.json     # VSCode devcontainer設定
-│   ├── Dockerfile            # コンテナ環境定義
-│   ├── init-firewall.sh      # セキュリティ制限スクリプト
+│   ├── Dockerfile            # コンテナ環境定義（Squidプロキシ対応）
+│   ├── init-firewall.sh      # Squidベースファイアウォールスクリプト
+│   ├── squid.conf            # Squidプロキシ設定ファイル
+│   ├── SQUID_README.md       # Squidシステムドキュメント
 │   └── .claude/settings.json # devcontainer用Claude設定
 ├── .github/            # GitHub設定
+│   ├── prompts/        # GitHub Copilot Chat向けプロンプトファイル
+│   └── copilot-instructions.md  # GitHub Copilot向けガイダンス
 ├── CLAUDE.md           # Claude Code用ガイダンス
 ├── README.md           # プロジェクト概要
 └── LICENSE             # ライセンスファイル
@@ -36,6 +40,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `.claude/agents/` に格納されているエージェントは以下の通り：
 
 - `code-reviewer` - コード品質、セキュリティ、保守性のレビューを行う
+- `debugger` - エラーやテストの失敗に対するデバッグを行う  
+- `tdd-refactoring-coach` - TDD（テスト駆動開発）とリファクタリングの指導を行う
 
 ## カスタムスラッシュコマンド
 
@@ -74,15 +80,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development Container
 `.devcontainer/` に完全なdevcontainer設定が含まれています：
-- **Claude Code Sandbox環境** - ネットワーク制限付きの安全な開発環境
-- **ファイアウォール設定** - GitHub、npm、Anthropic APIのみアクセス許可
+- **Claude Code Sandbox環境** - Squidプロキシベースのネットワーク制限付き安全環境
+- **Squidプロキシファイアウォール** - ワイルドカードドメイン対応の詳細アクセス制御
 - **Claude Code統合** - 事前設定済みの.claude/settings.json
-- **Biome統合** - 自動フォーマットとリンティング
+- **VS Code拡張機能** - GitHub Copilot、日本語パック、GitHub Actions統合
+
+### Squidベースファイアウォールシステム
+- `init-firewall.sh` - Squidプロキシサーバー起動とファイアウォール設定
+- `squid.conf` - ドメインベースアクセス制御設定（ワイルドカード対応）
+- `SQUID_README.md` - Squidシステムの詳細ドキュメントとデバッグ方法
+- 許可ドメイン：GitHub、VS Code、npmjs.org、api.anthropic.com、CDN等
+- 詳細アクセスログとリアルタイム監視機能
 
 ### セキュリティ制限
-- `init-firewall.sh`によりネットワークアクセスが制限されます
-- 許可されたドメイン：GitHub、npmjs.org、api.anthropic.com、sentry.io、statsig.com
-- `.claude/hooks/block-file-edits.sh`により.github/workflows等の編集が制限されます
+- `.claude/hooks/block-file-edits.sh`により以下ファイルの編集が制限：
+  - `.github/workflows/` - GitHub Actionsワークフロー
+  - `.claude/hooks/` - フックスクリプト自体
+  - `.claude/settings.json` - Claude設定ファイル
 
 ## 開発コマンド
 
@@ -96,22 +110,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `/create-commit` - コミットの作成（カスタムコマンド）
 - `/update-readme` - READMEファイルの更新（カスタムコマンド）
 
-## ファイル権限管理
+## ファイル権限管理とマルチプラットフォーム対応
 
-### フック機能による制限
-`.claude/hooks/block-file-edits.sh` が以下のファイルの編集を制限：
-- `.github/workflows/` - GitHub Actionsワークフロー
-- `.claude/hooks/` - フックスクリプト自体
-- `.claude/settings.json` - Claude設定ファイル
-
-### 権限設定例
+### devcontainer権限設定
 `.devcontainer/.claude/settings.json`でdevcontainer環境の権限を管理：
-- `Bash`, `WebFetch`, `WebSearch`を許可
-- `curl`, `wget`, `git push`, `gh pr`等のコマンドを制限
+- 許可ツール：`Bash`, `WebFetch`, `WebSearch`
+- 禁止コマンド：`curl`, `wget`, `git push`, `gh pr`等
+
+### デスクトップ通知システム
+`.claude/hooks/`に格納されたフック機能：
+- `notify-finish.sh` - Claude Codeタスク完了時の通知
+- `notify-require.sh` - Claude Codeからの通知受信
+
+### GitHub Copilot連携
+`.github/copilot-instructions.md`によるプロジェクト理解とClaude Code互換機能の提供
 
 ## 開発フロー
 
 1. 新機能やコマンドを追加する際は `/create-branch` でブランチを作成
 2. 変更後は `/create-commit` でコミットを作成
 3. コミットメッセージは日本語のコンベンショナルコミット形式で記載
-4. セキュリティ制限により、承認されたドメインのみアクセス可能
+4. READMEや設定の更新が必要な場合は `/update-readme` を実行
+5. Squidプロキシファイアウォールにより、承認されたドメインのみアクセス可能
+
+## 重要な制約と注意事項
+
+- このリポジトリはPure Git管理（ビルドやテストコマンドなし）
+- Claude Code環境ではファイル編集権限がフックにより制限される
+- devcontainer環境ではSquidプロキシによりネットワークアクセスが制限される
+- 全ての応答とコミットメッセージは日本語で記載する
+- Squidファイアウォールの詳細な設定やデバッグは `SQUID_README.md` を参照
