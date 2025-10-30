@@ -11,16 +11,63 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## アーキテクチャ
 
-このリポジトリはClaude Codeの拡張機能を集めたリソース集です：
+このリポジトリはClaude Codeの拡張機能を集めたリソース集で、4つのClaude Code Pluginとして配布されています。
+
+### プラグイン構造
+
+このリポジトリは以下の2つの役割を持ちます：
+
+1. **プラグイン提供者**: `claude-plugins/` 配下に4つのプラグイン（git、doc、engineer、security）が格納
+2. **プラグイン利用者**: `.claude/` 配下でこれらのプラグインをインストールして使用
+
+### 提供されるプラグイン
+
+1. **git** - Git操作コマンド（ブランチ作成、コミット作成）
+2. **doc** - ドキュメント更新コマンド（README更新）
+3. **engineer** - エンジニアリング支援エージェント（コードレビュー、デバッグ、TDD）
+4. **security** - セキュリティフック（ファイル編集制限、通知）
+
+### プラグインのインストール方法
+
+```bash
+# マーケットプレイスを追加
+/plugin marketplace add korosuke613/coding-agent-recipe
+
+# 必要なプラグインをインストール
+/plugin install git@korosuke613
+/plugin install doc@korosuke613
+/plugin install engineer@korosuke613
+/plugin install security@korosuke613
+```
 
 ### ディレクトリ構造
 ```
 .
-├── .claude/            # 本リポジトリでアクティブなClaude Code設定
-│   ├── agents/         # 使用中のエージェント設定
-│   ├── commands/       # 使用中のコマンド設定
-│   ├── hooks/          # 使用中のフック設定
-│   └── settings.json   # アクティブな設定ファイル
+├── .claude/            # プラグイン利用側（本リポジトリでの使用環境）
+│   └── settings.json   # アクティブな設定ファイル（permissionsのみ）
+├── .claude-plugin/     # マーケットプレイス定義
+│   └── marketplace.json # マーケットプレイス定義ファイル
+├── claude-plugins/     # プラグイン配布用ディレクトリ
+│   ├── git/            # Gitプラグイン
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── commands/
+│   │       ├── create-branch.md
+│   │       └── create-commit.md
+│   ├── doc/            # ドキュメントプラグイン
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── commands/
+│   │       └── update-readme.md
+│   ├── engineer/       # エンジニアリングプラグイン
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── agents/
+│   │       ├── code-reviewer.md
+│   │       ├── debugger.md
+│   │       └── tdd-refactoring-coach.md
+│   └── security/       # セキュリティプラグイン
+│       ├── .claude-plugin/plugin.json
+│       └── hooks/
+│           ├── hooks.json
+│           └── block-file-edits.sh
 ├── .devcontainer/      # Development Container設定
 │   ├── devcontainer.json     # VSCode devcontainer設定
 │   ├── Dockerfile            # コンテナ環境定義（Squidプロキシ対応）
@@ -37,7 +84,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 
 ### 利用可能なエージェント
-`.claude/agents/` に格納されているエージェントは以下の通り：
+`claude-plugins/engineer/agents/` に格納されているエージェントは以下の通り：
 
 - `code-reviewer` - コード品質、セキュリティ、保守性のレビューを行う
 - `debugger` - エラーやテストの失敗に対するデバッグを行う  
@@ -49,17 +96,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### `/create-branch`
 現在の変更を元に新しいブランチを作成するコマンド
-- 実装ファイル: `.claude/commands/create-branch.md`
+- プラグイン: `git`
+- 実装ファイル: `claude-plugins/git/commands/create-branch.md`
 - 機能: git status、git log、git branchの情報を参考にして適切なブランチ名でブランチを作成
 
 ### `/create-commit`
 現在の変更を元に新しいコミットを作成するコマンド
-- 実装ファイル: `.claude/commands/create-commit.md`
+- プラグイン: `git`
+- 実装ファイル: `claude-plugins/git/commands/create-commit.md`
 - 機能: git status、git log の情報を参考にしてコンベンショナルコミット形式でコミットを作成
 
 ### `/update-readme`
 プロジェクトのREADMEファイルを現在のコードベースに基づいて更新するコマンド
-- 実装ファイル: `.claude/commands/update-readme.md`
+- プラグイン: `doc`
+- 実装ファイル: `claude-plugins/doc/commands/update-readme.md`
 - 機能: プロジェクトの現在の構造を反映し、利用可能な機能やコマンドを正確に記載
 
 ## コミット規約
@@ -92,11 +142,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 許可ドメイン：GitHub、VS Code、npmjs.org、api.anthropic.com、CDN等
 - 詳細アクセスログとリアルタイム監視機能
 
-### セキュリティ制限
-- `.claude/hooks/block-file-edits.sh`により以下ファイルの編集が制限：
+### フック機能
+`security` プラグインとして提供されるフック（`claude-plugins/security/hooks/hooks.json`で定義）：
+- `block-file-edits.sh` - 以下ファイルの編集を制限：
   - `.github/workflows/` - GitHub Actionsワークフロー
   - `.claude/hooks/` - フックスクリプト自体
   - `.claude/settings.json` - Claude設定ファイル
+
+通知機能（`.claude/hooks/`に格納、プラグイン外）：
+- `notify-finish.sh` - Claude Codeタスク完了時の通知
+- `notify-require.sh` - Claude Codeからの通知受信
 
 ## 開発コマンド
 
@@ -116,11 +171,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `.devcontainer/.claude/settings.json`でdevcontainer環境の権限を管理：
 - 許可ツール：`Bash`, `WebFetch`, `WebSearch`
 - 禁止コマンド：`curl`, `wget`, `git push`, `gh pr`等
-
-### デスクトップ通知システム
-`.claude/hooks/`に格納されたフック機能：
-- `notify-finish.sh` - Claude Codeタスク完了時の通知
-- `notify-require.sh` - Claude Codeからの通知受信
 
 ### GitHub Copilot連携
 `.github/copilot-instructions.md`によるプロジェクト理解とClaude Code互換機能の提供

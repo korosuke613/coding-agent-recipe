@@ -1,0 +1,13 @@
+{
+  "name": "git",
+  "version": "1.0.0",
+  "description": "Git操作を支援するコマンド集（ブランチ作成、コミット作成）",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["git", "branch", "commit", "workflow", "japanese"]
+}

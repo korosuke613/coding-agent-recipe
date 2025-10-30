@@ -1,0 +1,13 @@
+{
+  "name": "security",
+  "version": "1.0.0",
+  "description": "セキュリティとワークフロー制御のためのフック集（ファイル編集制限、通知）",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["security", "hooks", "notification", "access-control", "japanese"]
+}
