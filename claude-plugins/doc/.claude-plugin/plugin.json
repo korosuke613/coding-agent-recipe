@@ -1,0 +1,13 @@
+{
+  "name": "doc",
+  "version": "1.0.0",
+  "description": "ドキュメント更新を支援するコマンド集（README更新）",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["documentation", "readme", "markdown", "japanese"]
+}

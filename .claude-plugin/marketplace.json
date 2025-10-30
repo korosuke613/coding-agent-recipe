@@ -1,0 +1,57 @@
+{
+  "name": "korosuke613",
+  "version": "1.0.0",
+  "description": "korosuke613のClaude Codeプラグインマーケットプレイス",
+  "owner": {
+    "name": "korosuke613"
+  },
+  "metadata": {
+    "pluginRoot": "./claude-plugins"
+  },
+  "plugins": [
+    {
+      "name": "git",
+      "description": "Git操作を支援するコマンド集（ブランチ作成、コミット作成）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/git",
+      "category": "productivity",
+      "tags": ["git", "branch", "commit", "workflow", "japanese"]
+    },
+    {
+      "name": "doc",
+      "description": "ドキュメント更新を支援するコマンド集（README更新）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/doc",
+      "category": "productivity",
+      "tags": ["documentation", "readme", "markdown", "japanese"]
+    },
+    {
+      "name": "engineer",
+      "description": "エンジニアリング支援エージェント集（コードレビュー、デバッグ、TDD）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/engineer",
+      "category": "productivity",
+      "tags": ["code-review", "debugging", "tdd", "refactoring", "japanese"]
+    },
+    {
+      "name": "security",
+      "description": "セキュリティとワークフロー制御のためのフック集（ファイル編集制限、通知）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/security",
+      "category": "security",
+      "tags": ["security", "hooks", "notification", "access-control", "japanese"]
+    }
+  ]
+}

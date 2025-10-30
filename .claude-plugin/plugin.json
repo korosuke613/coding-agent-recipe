@@ -1,0 +1,13 @@
+{
+  "name": "coding-agent-recipe",
+  "version": "1.0.0",
+  "description": "平木場用 Claude Code の便利プロンプト、エージェント、カスタムコマンドのコレクション",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["workflow", "git", "commit", "branch", "review", "tdd", "japanese"]
+}

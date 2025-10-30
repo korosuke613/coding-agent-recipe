@@ -7,39 +7,18 @@
     ],
     "deny": []
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|MultiEdit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-file-edits.sh"
-          }
-        ]
+  "extraKnownMarketplaces": {
+    "korosuke613": {
+      "source": {
+        "source": "directory",
+        "path": "./"
       }
-    ],
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notify-require.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notify-finish.sh"
-          }
-        ]
-      }
-    ]
+    }
+  },
+  "enabledPlugins": {
+    "git@korosuke613": true,
+    "security@korosuke613": true,
+    "doc@korosuke613": true,
+    "engineer@korosuke613": true
   }
 }

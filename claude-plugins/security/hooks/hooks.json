@@ -1,0 +1,16 @@
+{
+  "description": "ClaudeCodeの行動を制限するセキュリティフック集",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-file-edits.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
