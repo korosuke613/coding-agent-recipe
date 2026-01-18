@@ -11,13 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## アーキテクチャ
 
-このリポジトリはClaude Codeの拡張機能を集めたリソース集で、4つのClaude Code Pluginとして配布されています。
+このリポジトリはClaude Codeの拡張機能を集めたリソース集で、5つのClaude Code Pluginとして配布されています。
 
 ### プラグイン構造
 
 このリポジトリは以下の役割を持ちます：
 
-1. **プラグイン提供者**: `claude-plugins/` 配下に4つのプラグイン（git、doc、engineer、security）が格納
+1. **プラグイン提供者**: `claude-plugins/` 配下に5つのプラグイン（git、doc、engineer、security、dev-standards）が格納
 2. **プラグイン利用者**: `.claude/` 配下でこれらのプラグインをインストールして使用
 3. **スキル提供**: `.claude/skills/` 配下に本リポジトリ専用のスキルを格納
 
@@ -27,6 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **doc** - ドキュメント更新コマンド（README更新）
 3. **engineer** - エンジニアリング支援エージェント（コードレビュー、デバッグ、TDD）
 4. **security** - セキュリティフック（ファイル編集制限、通知）
+5. **dev-standards** - 開発標準・ルール遵守チェックスキル（TypeScript any禁止、CI品質チェック、conventional commit等）
 
 ### ローカル専用スキル
 
@@ -45,6 +46,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 /plugin install doc@korosuke613
 /plugin install engineer@korosuke613
 /plugin install security@korosuke613
+/plugin install dev-standards@korosuke613
 ```
 
 ### ディレクトリ構造
@@ -73,11 +75,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   │       ├── code-reviewer.md
 │   │       ├── debugger.md
 │   │       └── tdd-refactoring-coach.md
-│   └── security/       # セキュリティプラグイン
+│   ├── security/       # セキュリティプラグイン
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── hooks/
+│   │       ├── hooks.json
+│   │       └── block-file-edits.sh
+│   └── dev-standards/  # 開発標準プラグイン
 │       ├── .claude-plugin/plugin.json
-│       └── hooks/
-│           ├── hooks.json
-│           └── block-file-edits.sh
+│       └── skills/
+│           └── dev-standards/
+│               ├── SKILL.md
+│               └── references/
+│                   ├── typescript-rules.md
+│                   └── commit-conventions.md
 ├── .devcontainer/      # Development Container設定
 │   ├── devcontainer.json     # VSCode devcontainer設定
 │   ├── Dockerfile            # コンテナ環境定義（Squidプロキシ対応）
@@ -135,6 +145,23 @@ Claude Codeプラグインの陳腐化をチェックし、最新仕様との差
 - 使用方法:
   - プラグイン陳腐化チェックに関する質問や依頼をすると自動的にトリガーされる
   - `--fix`フラグで自動修正も可能
+
+### `dev-standards`
+プロジェクトの開発ルール遵守をチェックし、違反を報告・修正するスキル
+- 種類: プラグインスキル（配布）
+- プラグイン: `dev-standards`
+- 実装ファイル: `claude-plugins/dev-standards/skills/dev-standards/SKILL.md`
+- 機能: 5つの開発ルールのチェックと修正提案
+  1. TypeScriptにおいてanyは使わない
+  2. 必ずCIで品質チェックを行うようにする
+  3. デプロイ前にローカルで実行して動作確認できるようにする
+  4. 原則としてconventional commitを採用する
+  5. 依存ライブラリのバージョンは固定する
+- トリガー条件: コード作成・編集後、コミット前、PRレビュー時
+- 使用方法:
+  - `/dev-standards` で明示的にチェックを実行
+  - `--fix` フラグで自動修正提案を表示
+  - `--typescript`, `--ci`, `--dependencies`, `--commit`, `--local-test` などのオプションで特定のルールのみチェック可能
 
 ## コミット規約
 

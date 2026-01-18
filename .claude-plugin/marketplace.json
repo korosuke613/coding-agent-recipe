@@ -52,6 +52,17 @@
       "source": "./claude-plugins/security",
       "category": "security",
       "tags": ["security", "hooks", "notification", "access-control", "japanese"]
+    },
+    {
+      "name": "dev-standards",
+      "description": "開発標準・ルール遵守チェックスキル（TypeScript any禁止、CI品質チェック、conventional commit等）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/dev-standards",
+      "category": "productivity",
+      "tags": ["code-quality", "typescript", "conventional-commit", "ci", "dependencies", "japanese"]
     }
   ]
 }

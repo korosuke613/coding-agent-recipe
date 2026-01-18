@@ -1,0 +1,13 @@
+{
+  "name": "dev-standards",
+  "version": "1.0.0",
+  "description": "開発標準・ルール遵守チェックスキル",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["development-standards", "code-quality", "typescript", "conventional-commit", "japanese"]
+}
