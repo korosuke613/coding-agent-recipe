@@ -3,7 +3,10 @@
     "allow": [
       "Bash(gh pr list:*)",
       "Bash(gh pr view:*)",
-      "Bash(gh pr diff:*)"
+      "Bash(gh pr diff:*)",
+      "WebSearch",
+      "Skill(skill-creator)",
+      "Skill(check-plugin)"
     ],
     "deny": []
   },

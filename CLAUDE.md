@@ -15,17 +15,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### プラグイン構造
 
-このリポジトリは以下の2つの役割を持ちます：
+このリポジトリは以下の役割を持ちます：
 
 1. **プラグイン提供者**: `claude-plugins/` 配下に4つのプラグイン（git、doc、engineer、security）が格納
 2. **プラグイン利用者**: `.claude/` 配下でこれらのプラグインをインストールして使用
+3. **スキル提供**: `.claude/skills/` 配下に本リポジトリ専用のスキルを格納
 
-### 提供されるプラグイン
+### 提供されるプラグイン（配布用）
 
 1. **git** - Git操作コマンド（ブランチ作成、コミット作成）
 2. **doc** - ドキュメント更新コマンド（README更新）
 3. **engineer** - エンジニアリング支援エージェント（コードレビュー、デバッグ、TDD）
 4. **security** - セキュリティフック（ファイル編集制限、通知）
+
+### ローカル専用スキル
+
+1. **check-plugin** - プラグイン陳腐化チェックスキル（`.claude/skills/check-plugin/`）
+   - このスキルは本リポジトリ内でのみ利用可能
+   - Claude Code更新後や定期的なメンテナンス時に自動的にトリガーされる
 
 ### プラグインのインストール方法
 
@@ -44,7 +51,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 .
 ├── .claude/            # プラグイン利用側（本リポジトリでの使用環境）
-│   └── settings.json   # アクティブな設定ファイル（permissionsのみ）
+│   ├── settings.json   # アクティブな設定ファイル（permissionsのみ）
+│   └── skills/         # ローカル専用スキル
+│       └── check-plugin/ # プラグイン陳腐化チェックスキル
+│           └── SKILL.md
 ├── .claude-plugin/     # マーケットプレイス定義
 │   └── marketplace.json # マーケットプレイス定義ファイル
 ├── claude-plugins/     # プラグイン配布用ディレクトリ
@@ -111,6 +121,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - プラグイン: `doc`
 - 実装ファイル: `claude-plugins/doc/commands/update-readme.md`
 - 機能: プロジェクトの現在の構造を反映し、利用可能な機能やコマンドを正確に記載
+
+## 利用可能なスキル
+
+このリポジトリでは以下のスキルが利用可能：
+
+### `check-plugin`
+Claude Codeプラグインの陳腐化をチェックし、最新仕様との差異を報告するスキル
+- 種類: ローカル専用スキル（配布なし）
+- 実装ファイル: `.claude/skills/check-plugin/SKILL.md`
+- 機能: 最新仕様との差異を特定し、修正提案を行う
+- トリガー条件: Claude Code更新後、定期的なメンテナンス、プラグイン作成後の検証
+- 使用方法:
+  - プラグイン陳腐化チェックに関する質問や依頼をすると自動的にトリガーされる
+  - `--fix`フラグで自動修正も可能
 
 ## コミット規約
 
