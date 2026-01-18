@@ -63,6 +63,17 @@
       "source": "./claude-plugins/dev-standards",
       "category": "productivity",
       "tags": ["code-quality", "typescript", "conventional-commit", "ci", "dependencies", "japanese"]
+    },
+    {
+      "name": "github",
+      "description": "GitHub操作を支援するスキル集（PRレビュー対応など）",
+      "version": "1.0.0",
+      "author": {
+        "name": "korosuke613"
+      },
+      "source": "./claude-plugins/github",
+      "category": "productivity",
+      "tags": ["github", "pull-request", "review", "workflow", "japanese"]
     }
   ]
 }

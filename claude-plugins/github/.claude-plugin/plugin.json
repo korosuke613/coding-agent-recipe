@@ -1,0 +1,13 @@
+{
+  "name": "github",
+  "version": "1.0.0",
+  "description": "GitHub操作を支援するスキル集（PRレビュー対応など）",
+  "author": {
+    "name": "korosuke613",
+    "url": "https://github.com/korosuke613"
+  },
+  "homepage": "https://github.com/korosuke613/coding-agent-recipe",
+  "repository": "https://github.com/korosuke613/coding-agent-recipe",
+  "license": "MIT",
+  "keywords": ["github", "pull-request", "review", "workflow", "japanese"]
+}

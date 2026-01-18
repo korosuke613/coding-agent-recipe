@@ -11,13 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## アーキテクチャ
 
-このリポジトリはClaude Codeの拡張機能を集めたリソース集で、5つのClaude Code Pluginとして配布されています。
+このリポジトリはClaude Codeの拡張機能を集めたリソース集で、6つのClaude Code Pluginとして配布されています。
 
 ### プラグイン構造
 
 このリポジトリは以下の役割を持ちます：
 
-1. **プラグイン提供者**: `claude-plugins/` 配下に5つのプラグイン（git、doc、engineer、security、dev-standards）が格納
+1. **プラグイン提供者**: `claude-plugins/` 配下に6つのプラグイン（git、doc、engineer、security、dev-standards、github）が格納
 2. **プラグイン利用者**: `.claude/` 配下でこれらのプラグインをインストールして使用
 3. **スキル提供**: `.claude/skills/` 配下に本リポジトリ専用のスキルを格納
 
@@ -28,6 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **engineer** - エンジニアリング支援エージェント（コードレビュー、デバッグ、TDD）
 4. **security** - セキュリティフック（ファイル編集制限、通知）
 5. **dev-standards** - 開発標準・ルール遵守チェックスキル（TypeScript any禁止、CI品質チェック、conventional commit等）
+6. **github** - GitHub操作支援スキル（PRレビュー対応）
 
 ### ローカル専用スキル
 
@@ -47,6 +48,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 /plugin install engineer@korosuke613
 /plugin install security@korosuke613
 /plugin install dev-standards@korosuke613
+/plugin install github@korosuke613
 ```
 
 ### ディレクトリ構造
@@ -80,14 +82,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   │   └── hooks/
 │   │       ├── hooks.json
 │   │       └── block-file-edits.sh
-│   └── dev-standards/  # 開発標準プラグイン
+│   ├── dev-standards/  # 開発標準プラグイン
+│   │   ├── .claude-plugin/plugin.json
+│   │   └── skills/
+│   │       └── dev-standards/
+│   │           ├── SKILL.md
+│   │           └── references/
+│   │               ├── typescript-rules.md
+│   │               └── commit-conventions.md
+│   └── github/         # GitHubプラグイン
 │       ├── .claude-plugin/plugin.json
 │       └── skills/
-│           └── dev-standards/
+│           └── respond-to-pr-review/
 │               ├── SKILL.md
 │               └── references/
-│                   ├── typescript-rules.md
-│                   └── commit-conventions.md
+│                   └── github-api-examples.md
 ├── .devcontainer/      # Development Container設定
 │   ├── devcontainer.json     # VSCode devcontainer設定
 │   ├── Dockerfile            # コンテナ環境定義（Squidプロキシ対応）
@@ -164,6 +173,20 @@ Claude Codeプラグインの陳腐化をチェックし、最新仕様との差
   - `/dev-standards` で明示的にチェックを実行
   - `--fix` フラグで自動修正提案を表示
   - `--typescript`, `--ci`, `--dependencies`, `--commit`, `--local-test`, `--unit-test`, `--pre-commit` などのオプションで特定のルールのみチェック可能
+
+### `respond-to-pr-review`
+GitHub Pull Requestのレビューコメントに効率的に対応するスキル
+- 種類: プラグインスキル（配布）
+- プラグイン: `github`
+- 実装ファイル: `claude-plugins/github/skills/respond-to-pr-review/SKILL.md`
+- 機能: PRレビュー対応の一連のワークフローをサポート
+  1. レビューコメントの取得と確認
+  2. 対応判断（対応すべきか、しないかの基準）
+  3. 必要に応じてコードを修正
+  4. 各コメントへの返信作成
+  5. レビュースレッドのresolve
+- トリガー条件: PRレビュー対応、レビューコメント返信、レビュー指摘への対応時
+- 参考資料: `claude-plugins/github/skills/respond-to-pr-review/references/github-api-examples.md`
 
 ## コミット規約
 
