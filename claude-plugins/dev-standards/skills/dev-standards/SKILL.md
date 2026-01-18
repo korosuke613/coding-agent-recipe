@@ -1,11 +1,11 @@
 ---
 name: dev-standards
-description: プロジェクトの開発ルール遵守をチェックし、違反を報告・修正する。TypeScriptでのany禁止、CI品質チェック必須、ローカル動作確認、conventional commit採用、依存バージョン固定のルールを適用。コード作成・編集後、コミット前、PRレビュー時に使用。`/dev-standards`で明示的にチェック、`--fix`で自動修正を実行。
+description: プロジェクトの開発ルール遵守をチェックし、違反を報告・修正する。TypeScriptでのany禁止、CI品質チェック必須、ローカル動作確認、conventional commit採用、依存バージョン固定、ユニットテスト必須のルールを適用。コード作成・編集後、コミット前、PRレビュー時に使用。`/dev-standards`で明示的にチェック、`--fix`で自動修正を実行。
 ---
 
 # 開発ルール遵守チェックスキル
 
-このスキルは、プロジェクトで重要な5つの開発ルールが適切に守られているかをチェックし、違反を発見・報告・修正します。
+このスキルは、プロジェクトで重要な6つの開発ルールが適切に守られているかをチェックし、違反を発見・報告・修正します。
 
 ## 実行方法
 
@@ -25,6 +25,7 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 - `--dependencies` - 依存関係管理のルールのみチェック
 - `--commit` - コミット規約のルールのみチェック
 - `--local-test` - ローカルテスト実行環境のルールのみチェック
+- `--unit-test` - ユニットテスト関連のルールのみチェック
 - 引数にファイルパスを指定 - 特定のファイルのみをチェック
 
 ### 使用例
@@ -43,7 +44,7 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 /dev-standards src/utils/api.ts
 ```
 
-## チェックされる5つの開発ルール
+## チェックされる6つの開発ルール
 
 ### 1. TypeScriptにおいてanyは使わない
 
@@ -140,6 +141,87 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 }
 ```
 
+### 6. 必ずユニットテストを追加すること
+
+**目的**: テスト可能な設計を促進し、コード品質とメンテナンス性を担保する
+
+**チェック内容**:
+- プロダクションコードに対応するテストファイルの存在確認
+  - `.test.ts`, `.spec.ts`, `.test.tsx`, `.spec.tsx` などの命名規則
+  - テストファイルがプロダクションコードと同じディレクトリまたは `__tests__/` ディレクトリに配置されているか
+- テストフレームワークの設定確認（Jest, Vitest, Mocha など）
+- テストカバレッジ設定の確認
+- ユニットテストの定義準拠（外部サービスやシステムに依存しないテストか）
+  - ❌ データベース接続を必要とするテストはユニットテストとして扱わない
+  - ❌ 外部APIを呼び出すテストはユニットテストとして扱わない
+  - ❌ ファイルシステムへの実際の読み書きに依存するテストはユニットテストとして扱わない
+  - ✅ モックやスタブを使用して依存関係を分離したテスト
+
+**修正提案**:
+- 不足しているテストファイルの追加（テストカバレッジの向上）
+- テスト可能な設計への改善:
+  - 依存性注入（DI）の活用により外部依存を分離
+  - Pure Functionの使用で副作用を最小化
+  - モック可能なインターフェースの設計
+  - 責務の分離（Single Responsibility Principle）
+- テストフレームワーク（Jest, Vitest など）とモックライブラリの設定
+- 重い統合テストやE2Eテストは別ディレクトリ（`integration-tests/`, `e2e/` など）に分離
+
+**推奨されるテスト構造**:
+```
+src/
+  utils/
+    api.ts               # プロダクションコード
+    api.test.ts          # ユニットテスト（モック使用）
+  components/
+    Button.tsx
+    Button.test.tsx      # ユニットテスト
+integration-tests/       # 統合テスト（DB, 外部APIなど）
+  api.integration.test.ts
+e2e/                     # E2Eテスト
+  user-flow.spec.ts
+```
+
+**ユニットテストの良い例**:
+```typescript
+// ✅ 依存性注入とモックを使用したユニットテスト
+import { fetchUserData } from './api';
+import { httpClient } from './httpClient';
+
+jest.mock('./httpClient');
+
+test('fetchUserData should return user data', async () => {
+  // モックを設定
+  (httpClient.get as jest.Mock).mockResolvedValue({ id: 1, name: 'Test' });
+
+  const result = await fetchUserData(1);
+
+  expect(result).toEqual({ id: 1, name: 'Test' });
+});
+```
+
+**ユニットテストの悪い例**:
+```typescript
+// ❌ 実際のデータベースに接続（統合テスト）
+test('should save user to database', async () => {
+  const db = new Database('postgresql://...');  // 実際のDB接続
+  await db.connect();
+
+  const user = await saveUser({ name: 'Test' });
+
+  expect(user.id).toBeDefined();
+  await db.disconnect();
+});
+
+// ❌ 実際の外部APIを呼び出し（統合テスト）
+test('should fetch data from real API', async () => {
+  const response = await fetch('https://api.example.com/data');  // 実際のAPI呼び出し
+  const data = await response.json();
+
+  expect(data).toBeDefined();
+});
+```
+
 ## レポート出力フォーマット
 
 チェック実行後、以下の形式でレポートを出力します：
@@ -148,9 +230,9 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 # 開発ルール遵守チェックレポート
 
 ## チェック結果サマリー
-- ✅ 合格: 3項目
+- ✅ 合格: 4項目
 - ⚠️ 警告: 1項目
-- ❌ 不合格: 1項目
+- ❌ 不合格: 2項目
 
 ## 詳細
 
@@ -186,6 +268,23 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 **ステータス**: 合格
 - `package.json` で全ての依存関係が固定バージョンで指定されています
 - `package-lock.json` が存在します
+
+### ❌ 6. 必ずユニットテストを追加すること
+**ステータス**: 不合格
+**違反箇所**: 5件
+
+- `src/utils/api.ts` - 対応するテストファイルが存在しません
+- `src/utils/validation.ts` - 対応するテストファイルが存在しません
+- `src/components/Form.tsx` - 対応するテストファイルが存在しません
+- `src/hooks/useData.ts` - テストが統合テストになっています（実際のAPIを呼び出し）
+- テストカバレッジの設定がありません
+
+**修正提案**:
+- 各プロダクションコードに対応するテストファイルを追加してください
+  - `src/utils/api.test.ts`, `src/utils/validation.test.ts`, `src/components/Form.test.tsx` など
+- 外部依存を持つコードはモックを使用したユニットテストに変更してください
+- テストフレームワーク（Jest, Vitest など）のカバレッジ設定を追加してください
+- 統合テストは `integration-tests/` ディレクトリに移動してください
 ```
 
 ## 自動修正モード (`--fix`)
@@ -238,6 +337,7 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 
 - [TypeScript ルール詳細](./references/typescript-rules.md)
 - [Conventional Commit 規約詳細](./references/commit-conventions.md)
+- [ユニットテスト ルール詳細](./references/unit-test-rules.md)
 
 ## 使用タイミング
 

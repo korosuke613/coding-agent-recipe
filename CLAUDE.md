@@ -151,17 +151,18 @@ Claude Codeプラグインの陳腐化をチェックし、最新仕様との差
 - 種類: プラグインスキル（配布）
 - プラグイン: `dev-standards`
 - 実装ファイル: `claude-plugins/dev-standards/skills/dev-standards/SKILL.md`
-- 機能: 5つの開発ルールのチェックと修正提案
+- 機能: 6つの開発ルールのチェックと修正提案
   1. TypeScriptにおいてanyは使わない
   2. 必ずCIで品質チェックを行うようにする
   3. デプロイ前にローカルで実行して動作確認できるようにする
   4. 原則としてconventional commitを採用する
   5. 依存ライブラリのバージョンは固定する
+  6. 必ずユニットテストを追加すること（外部サービスやシステムに依存しない）
 - トリガー条件: コード作成・編集後、コミット前、PRレビュー時
 - 使用方法:
   - `/dev-standards` で明示的にチェックを実行
   - `--fix` フラグで自動修正提案を表示
-  - `--typescript`, `--ci`, `--dependencies`, `--commit`, `--local-test` などのオプションで特定のルールのみチェック可能
+  - `--typescript`, `--ci`, `--dependencies`, `--commit`, `--local-test`, `--unit-test` などのオプションで特定のルールのみチェック可能
 
 ## コミット規約
 
