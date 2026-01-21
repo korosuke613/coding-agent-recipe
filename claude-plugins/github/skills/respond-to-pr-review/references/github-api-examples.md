@@ -27,17 +27,18 @@ gh api /repos/korosuke613/mynewshq/pulls/4/comments | jq '.[] | select(.path == 
 ### 基本的な返信
 
 ```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/comments/2702403910/replies \
+gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments \
   -X POST \
   -f body="✅ 修正しました (13bf420)
 
-try-catchでエラーハンドリングを追加し、ラベル追加が失敗してもDiscussion URLを正常に返すようにしました。"
+try-catchでエラーハンドリングを追加し、ラベル追加が失敗してもDiscussion URLを正常に返すようにしました。" \
+  -F in_reply_to={comment_id}
 ```
 
 ### 複数行の返信（ヒアドキュメント使用）
 
 ```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/comments/2702403908/replies \
+gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments \
   -X POST \
   -f body="$(cat <<'EOF'
 この件は対応しません
@@ -49,7 +50,8 @@ gh api /repos/korosuke613/mynewshq/pulls/4/comments/2702403908/replies \
 
 呼び出し側でエラーハンドリングを追加したため、実用上の問題はありません。
 EOF
-)"
+)" \
+  -F in_reply_to={comment_id}
 ```
 
 ## レビュースレッドの取得とresolve
