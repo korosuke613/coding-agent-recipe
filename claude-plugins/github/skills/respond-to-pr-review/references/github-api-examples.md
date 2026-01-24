@@ -1,25 +1,82 @@
-# GitHub API使用例
+# スクリプト使用例
 
-PRレビュー対応で使用するGitHub APIコマンドの詳細な使用例。
+PRレビュー対応で使用するシェルスクリプトの詳細な使用例。
+
+## 前提条件
+
+すべてのスクリプトは以下を前提とする：
+- `jq` がインストールされていること
+- `gh` (GitHub CLI) がインストールされ、認証済みであること
+
+## PR URLのパース
+
+### 基本的な使用方法
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4"
+```
+
+出力：
+```json
+{
+  "owner": "korosuke613",
+  "repo": "mynewshq",
+  "pr_number": 4
+}
+```
+
+### 様々なURLフォーマット
+
+```bash
+# HTTPSプレフィックス付き
+${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
+
+# プレフィックスなし
+${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "github.com/owner/repo/pull/123"
+```
+
+### シェル変数への代入
+
+```bash
+# jqで各フィールドを抽出
+pr_info=$(${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123")
+owner=$(echo "$pr_info" | jq -r '.owner')
+repo=$(echo "$pr_info" | jq -r '.repo')
+pr_number=$(echo "$pr_info" | jq -r '.pr_number')
+```
 
 ## レビューコメントの取得
 
-### 基本的な取得
+### 詳細なJSON形式
 
 ```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/comments
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4
 ```
 
-### フォーマットして取得
-
-```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/comments | jq '.[] | {id, path, line, body}'
+出力例：
+```json
+{
+  "id": 1234567890,
+  "path": "scripts/create-discussion.ts",
+  "line": 220,
+  "original_line": 220,
+  "body": "ラベル追加が失敗した場合のエラーハンドリングを追加してください",
+  "user": "reviewer",
+  "created_at": "2024-01-15T10:00:00Z",
+  "in_reply_to_id": null
+}
 ```
 
-### 特定の行のコメントを抽出
+### サマリー形式
 
 ```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/comments | jq '.[] | select(.path == "scripts/create-discussion.ts" and .line == 220)'
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4 --format=summary
+```
+
+出力例：
+```
+[1234567890] scripts/create-discussion.ts:220 - ラベル追加が失敗した場合のエラーハンドリングを追加してください...
+[1234567891] scripts/create-discussion.ts:45 - この関数にユニットテストを追加してください...
 ```
 
 ## レビューコメントへの返信
@@ -27,152 +84,179 @@ gh api /repos/korosuke613/mynewshq/pulls/4/comments | jq '.[] | select(.path == 
 ### 基本的な返信
 
 ```bash
-gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -X POST \
-  -f body="✅ 修正しました (13bf420)
+${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567890 "修正しました (13bf420)
 
-try-catchでエラーハンドリングを追加し、ラベル追加が失敗してもDiscussion URLを正常に返すようにしました。" \
-  -F in_reply_to={comment_id}
+try-catchでエラーハンドリングを追加し、ラベル追加が失敗してもDiscussion URLを正常に返すようにしました。"
 ```
 
-### 複数行の返信（ヒアドキュメント使用）
+### ヒアドキュメントを使った複数行の返信
 
 ```bash
-gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -X POST \
-  -f body="$(cat <<'EOF'
+${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567891 "$(cat <<'EOF'
 この件は対応しません
 
 **理由：**
-- \`addLabelsToDiscussion\`は内部関数でAPIモックが必要
-- \`determineLabels\`のロジックは既に十分テストされている
+- `addLabelsToDiscussion`は内部関数でAPIモックが必要
+- `determineLabels`のロジックは既に十分テストされている
 - このプロジェクトの規模では実装コストに対する効果が低い
 
 呼び出し側でエラーハンドリングを追加したため、実用上の問題はありません。
 EOF
-)" \
-  -F in_reply_to={comment_id}
+)"
 ```
 
-## レビュースレッドの取得とresolve
+## レビュースレッドの取得
 
-### スレッドIDの取得
+### 全スレッドを取得
 
 ```bash
-gh api graphql -f query='
-query {
-  repository(owner: "korosuke613", name: "mynewshq") {
-    pullRequest(number: 4) {
-      reviewThreads(first: 10) {
-        nodes {
-          id
-          isResolved
-          comments(first: 1) {
-            nodes {
-              databaseId
-              body
-            }
-          }
-        }
-      }
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4
+```
+
+出力例：
+```json
+{
+  "threadId": "PRRT_kwDOQ8GWfs5p4t_j",
+  "isResolved": false,
+  "isOutdated": false,
+  "path": "scripts/create-discussion.ts",
+  "line": 220,
+  "commentId": 1234567890,
+  "author": "reviewer",
+  "body": "ラベル追加が失敗した場合のエラーハンドリングを追加してください"
+}
+```
+
+### 未解決のスレッドのみ取得
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4 --unresolved-only
+```
+
+## スレッドのresolve
+
+### 単一スレッドをresolve
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
+```
+
+### 複数スレッドを一括resolve
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh \
+  "PRRT_kwDOQ8GWfs5p4t_e" \
+  "PRRT_kwDOQ8GWfs5p4t_h" \
+  "PRRT_kwDOQ8GWfs5p4t_j"
+```
+
+出力例：
+```
+Resolved 3 thread(s) successfully.
+{
+  "thread0": {
+    "thread": {
+      "id": "PRRT_kwDOQ8GWfs5p4t_e",
+      "isResolved": true
+    }
+  },
+  "thread1": {
+    "thread": {
+      "id": "PRRT_kwDOQ8GWfs5p4t_h",
+      "isResolved": true
+    }
+  },
+  "thread2": {
+    "thread": {
+      "id": "PRRT_kwDOQ8GWfs5p4t_j",
+      "isResolved": true
     }
   }
-}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | {threadId: .id, isResolved: .isResolved, commentId: .comments.nodes[0].databaseId, body: .comments.nodes[0].body[0:80]}'
+}
 ```
 
-### 単一スレッドのresolve
+## 完全なワークフロー例
+
+### 1. PR URLからリポジトリ情報を取得
 
 ```bash
-gh api graphql -f query='
-mutation {
-  resolveReviewThread(input: {threadId: "PRRT_kwDOQ8GWfs5p4t_j"}) {
-    thread {
-      isResolved
-    }
-  }
-}'
+pr_info=$(${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4")
+owner=$(echo "$pr_info" | jq -r '.owner')
+repo=$(echo "$pr_info" | jq -r '.repo')
+pr_number=$(echo "$pr_info" | jq -r '.pr_number')
 ```
 
-### 複数スレッドの一括resolve
+### 2. レビューコメントを確認
 
 ```bash
-gh api graphql -f query='
-mutation {
-  thread1: resolveReviewThread(input: {threadId: "PRRT_kwDOQ8GWfs5p4t_e"}) {
-    thread { isResolved }
-  }
-  thread2: resolveReviewThread(input: {threadId: "PRRT_kwDOQ8GWfs5p4t_h"}) {
-    thread { isResolved }
-  }
-  thread3: resolveReviewThread(input: {threadId: "PRRT_kwDOQ8GWfs5p4t_j"}) {
-    thread { isResolved }
-  }
-}'
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh "$owner" "$repo" "$pr_number" --format=summary
 ```
 
-### resolve状態の確認
+### 3. コード修正（必要に応じて）
 
 ```bash
-gh api graphql -f query='
-query {
-  repository(owner: "korosuke613", name: "mynewshq") {
-    pullRequest(number: 4) {
-      reviewThreads(first: 10) {
-        nodes {
-          isResolved
-          comments(first: 1) {
-            nodes {
-              body
-            }
-          }
-        }
-      }
-    }
-  }
-}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | {isResolved: .isResolved, body: .comments.nodes[0].body[0:60]}'
+# 修正をコミット
+git add scripts/create-discussion.ts
+git commit -m "fix: エラーハンドリングを追加
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+git push origin feature-branch
 ```
 
-## PRの情報取得
-
-### PR全体の情報
+### 4. 各コメントに返信
 
 ```bash
-gh pr view 4
+${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567890 "修正しました (abc1234)"
+${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567891 "この件は対応しません。理由は..."
 ```
 
-### PR with comments
+### 5. スレッドをresolve
 
 ```bash
-gh pr view 4 --comments
-```
+# 未解決スレッドのIDを取得
+thread_ids=$(${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh "$owner" "$repo" "$pr_number" --unresolved-only | jq -r '.threadId')
 
-### PR reviews
-
-```bash
-gh api /repos/korosuke613/mynewshq/pulls/4/reviews | jq '.[] | {author: .user.login, state: .state, body: .body}'
+# 一括resolve
+${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh $thread_ids
 ```
 
 ## トラブルシューティング
 
-### コメントIDが見つからない場合
+### jqが見つからない場合
 
-レビューコメントとPR conversationコメントは別のエンドポイント：
-- レビューコメント: `/repos/{owner}/{repo}/pulls/{pr_number}/comments`
-- 会話コメント: `/repos/{owner}/{repo}/issues/{pr_number}/comments`
-
-### GraphQL schemaの確認
-
-```bash
-gh api graphql --paginate -f query='
-query {
-  __type(name: "PullRequestReviewThread") {
-    fields {
-      name
-      type {
-        name
-        kind
-      }
-    }
-  }
-}'
 ```
+Error: jq is required but not installed.
+```
+
+解決方法：
+```bash
+# macOS
+brew install jq
+
+# Ubuntu/Debian
+sudo apt-get install jq
+```
+
+### GitHub CLIが認証されていない場合
+
+```
+Error: Failed to fetch review comments.
+gh: Not logged in to github.com
+```
+
+解決方法：
+```bash
+gh auth login
+```
+
+### レビューコメントとPR会話コメントの違い
+
+レビューコメントとPR会話コメントは異なるエンドポイントを使用する：
+
+- **レビューコメント**: コードの特定行に付けられたコメント
+  - `get-review-comments.sh` で取得
+  - `reply-to-comment.sh` で返信
+
+- **会話コメント**: PRの会話タブに投稿された一般的なコメント
+  - `gh api /repos/{owner}/{repo}/issues/{pr_number}/comments` で取得
+  - `gh api /repos/{owner}/{repo}/issues/{pr_number}/comments -f body="..."` で投稿

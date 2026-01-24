@@ -1,6 +1,7 @@
 ---
 name: respond-to-pr-review
-description: GitHub Pull RequestのレビューコメントにClaude Code風に効率的に対応するスキル。レビュー内容の確認、各コメントへの返信作成、スレッドのresolve処理を一貫したワークフローで実行。PRレビュー対応、レビューコメント返信、レビュー指摘への対応時に使用。
+description: GitHub Pull Requestのレビューコメントに効率的に対応するスキル。「レビュー対応して」「PRレビューコメントに返信」「レビュー指摘を修正」などの自然言語リクエストや、PRリンク（github.com/.../pull/123）を含むリクエストでトリガーされる。トリガーキーワード：レビュー対応、PRレビューコメント、レビュー指摘、review response、respond to review。
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*:*), Bash(gh pr view:*), Bash(git:*), Read, Edit, Glob, Grep
 ---
 
 # Respond to PR Review
@@ -9,15 +10,40 @@ description: GitHub Pull RequestのレビューコメントにClaude Code風に�
 
 GitHub Pull Requestのレビューコメントに対して、適切な判断と返信を行い、スレッドをresolveするまでの一連のワークフローをサポートするスキル。
 
+## 利用可能なスクリプト
+
+このスキルでは、`${CLAUDE_PLUGIN_ROOT}/scripts/` 配下の以下のスクリプトを使用する：
+
+| スクリプト | 役割 |
+|-----------|------|
+| `parse-pr-url.sh` | PR URLからowner/repo/pr_numberを抽出 |
+| `get-review-comments.sh` | レビューコメント一覧を取得 |
+| `reply-to-comment.sh` | コメントに返信を投稿 |
+| `get-review-threads.sh` | レビュースレッドID・状態を取得（GraphQL） |
+| `resolve-threads.sh` | スレッドを一括resolve（GraphQL） |
+
 ## ワークフロー
 
-### Step 1: レビューコメントの取得と確認
+### Step 1: PR情報の取得
 
-PRのレビューコメントをGitHub CLIで取得し、内容を確認する。
+PR URLからリポジトリ情報を抽出する。
 
 ```bash
-# PRのレビューコメント一覧を取得
-gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '.[] | {id, path, line, body}'
+# PR URLをパース
+${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
+# Output: {"owner": "owner", "repo": "repo", "pr_number": 123}
+```
+
+### Step 2: レビューコメントの取得と確認
+
+PRのレビューコメントを取得し、内容を確認する。
+
+```bash
+# 詳細なJSON形式で取得
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh owner repo 123
+
+# 簡潔なサマリー形式で取得
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh owner repo 123 --format=summary
 ```
 
 各コメントについて以下を確認：
@@ -25,7 +51,7 @@ gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '.[] | {id, path, l
 - 対象ファイルと行番号
 - 指摘内容
 
-### Step 2: 対応判断
+### Step 3: 対応判断
 
 各レビューコメントについて、対応するかどうかを判断する。
 
@@ -54,7 +80,7 @@ gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments | jq '.[] | {id, path, l
 2. **費用対効果**: テストの実装コストと効果を天秤にかける
 3. **実用性優先**: 理想論より実用上の問題解決を優先
 
-### Step 3: 必要に応じてコードを修正
+### Step 4: 必要に応じてコードを修正
 
 対応が必要なコメントについて、コードを修正してコミットする。
 
@@ -71,7 +97,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 git push origin <branch_name>
 ```
 
-### Step 4: 各コメントに返信
+### Step 5: 各コメントに返信
 
 すべてのレビューコメントに対して、返信を作成する。**すべてのコメントに返信することが重要**。
 
@@ -79,7 +105,7 @@ git push origin <branch_name>
 
 **対応済みの場合:**
 ```markdown
-✅ 修正しました (<commit_hash>)
+修正しました (<commit_hash>)
 
 <具体的な修正内容の説明>
 ```
@@ -97,7 +123,7 @@ git push origin <branch_name>
 
 **間接的に対応済みの場合:**
 ```markdown
-✅ 対応済み (<commit_hash>)
+対応済み (<commit_hash>)
 
 コメント#X の修正で、<具体的な対応内容>。これにより<問題が解決した理由>。
 ```
@@ -105,60 +131,26 @@ git push origin <branch_name>
 #### 返信の実行
 
 ```bash
-# 各コメントに返信（コメントIDを使用）
-gh api /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies -X POST -f body="<返信内容>"
+# コメントに返信（コメントIDを使用）
+${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh owner repo 123 <comment_id> "返信内容"
 ```
 
-### Step 5: レビュースレッドをresolve
+### Step 6: レビュースレッドをresolve
 
 すべてのコメントに返信したら、レビュースレッドをresolve状態にする。
 
 ```bash
-# まずスレッドIDを取得
-gh api graphql -f query='
-query {
-  repository(owner: "{owner}", name: "{repo}") {
-    pullRequest(number: {pr_number}) {
-      reviewThreads(first: 10) {
-        nodes {
-          id
-          isResolved
-          comments(first: 1) {
-            nodes {
-              databaseId
-              body
-            }
-          }
-        }
-      }
-    }
-  }
-}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | {threadId: .id, isResolved: .isResolved, commentId: .comments.nodes[0].databaseId, body: .comments.nodes[0].body[0:80]}'
+# スレッド情報を取得
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh owner repo 123
 
-# 各スレッドをresolve
-gh api graphql -f query='
-mutation {
-  resolveReviewThread(input: {threadId: "<thread_id>"}) {
-    thread { isResolved }
-  }
-}'
-```
+# 未解決のスレッドのみ取得
+${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh owner repo 123 --unresolved-only
 
-複数スレッドを一度にresolveする場合:
+# スレッドをresolve（単一）
+${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
 
-```bash
-gh api graphql -f query='
-mutation {
-  thread1: resolveReviewThread(input: {threadId: "<thread_id_1>"}) {
-    thread { isResolved }
-  }
-  thread2: resolveReviewThread(input: {threadId: "<thread_id_2>"}) {
-    thread { isResolved }
-  }
-  thread3: resolveReviewThread(input: {threadId: "<thread_id_3>"}) {
-    thread { isResolved }
-  }
-}'
+# スレッドを一括resolve（複数）
+${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_e" "PRRT_kwDOQ8GWfs5p4t_h" "PRRT_kwDOQ8GWfs5p4t_j"
 ```
 
 ## ベストプラクティス
@@ -183,4 +175,4 @@ mutation {
 
 ## 参考資料
 
-詳細なGitHub API使用例は [references/github-api-examples.md](references/github-api-examples.md) を参照してください。
+詳細なスクリプト使用例は [references/github-api-examples.md](references/github-api-examples.md) を参照してください。
