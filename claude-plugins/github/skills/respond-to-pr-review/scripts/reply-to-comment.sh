@@ -37,7 +37,7 @@ if [[ -z "$body" ]]; then
 fi
 
 # GitHub APIで返信を投稿
-response=$(gh api "/repos/${owner}/${repo}/pulls/comments/${comment_id}/replies" \
+response=$(gh api "/repos/${owner}/${repo}/pulls/${pr_number}/comments/${comment_id}/replies" \
     -X POST \
     -f body="$body" 2>&1) || {
     echo "Error: Failed to post reply." >&2
