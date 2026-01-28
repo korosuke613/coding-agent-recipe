@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ルール
 - 日本語で回答すること
+- プランを実行に移す際は Todo として以下を最初に追加すること
+  - 今回のプランファイル（`./plans/hoge.md`）の名前を `<YYYY>-<MM>-<DD>-<短い説明>.md` の形式に従って変更する
 
 ## プロジェクト概要
 
