@@ -31,7 +31,7 @@ claude-plugins/github/
 
 **frontmatter:**
 ```yaml
-allowed-tools: Bash(./scripts/*:*), Bash(gh pr view:*), Bash(git:*), Read, Edit, Glob, Grep
+allowed-tools: Bash, Read, Edit, Glob, Grep
 ```
 
 **本文に追加:**
