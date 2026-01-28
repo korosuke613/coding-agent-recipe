@@ -1,6 +1,6 @@
 ---
 name: dev-standards
-description: プロジェクトの開発ルール遵守をチェックし、違反を報告・修正する。TypeScriptでのany禁止、CI品質チェック必須、ローカル動作確認、conventional commit採用、依存バージョン固定、ユニットテスト必須、コミット前lint/format/test実行のルールを適用。コード作成・編集後、コミット前、PRレビュー時に使用。`/dev-standards`で明示的にチェック、`--fix`で自動修正を実行。
+description: コミット前やPRレビュー時に開発ルール遵守をチェック。TypeScriptのany/as使用、CI設定、テスト、コミット規約などを検証し違反を報告。`/dev-standards`で明示的にチェック、`--fix`で自動修正。
 ---
 
 # 開発ルール遵守チェックスキル
@@ -20,7 +20,8 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 ### オプション
 
 - `--fix` - 自動修正可能な違反を修正提案として表示
-- `--typescript` - TypeScript関連のルールのみチェック
+- `--typescript` - TypeScript関連のルール（any禁止、as制限）のみチェック
+- `--type-assertion` - 型アサーション（as）の使用のみチェック
 - `--ci` - CI/CD関連のルールのみチェック
 - `--dependencies` - 依存関係管理のルールのみチェック
 - `--commit` - コミット規約のルールのみチェック
@@ -35,8 +36,11 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 # プロジェクト全体をチェック
 /dev-standards
 
-# TypeScriptファイルのanyのみチェック
+# TypeScriptファイルのanyとasをチェック
 /dev-standards --typescript
+
+# 型アサーション（as）の使用のみチェック
+/dev-standards --type-assertion
 
 # 自動修正提案を表示
 /dev-standards --fix
@@ -47,7 +51,7 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 
 ## チェックされる7つの開発ルール
 
-### 1. TypeScriptにおいてanyは使わない
+### 1. TypeScriptにおいてanyとasは極力使わない
 
 **目的**: 型安全性を確保し、バグを事前に防止する
 
@@ -55,12 +59,22 @@ description: プロジェクトの開発ルール遵守をチェックし、違�
 - `.ts`, `.tsx` ファイル内の `any` 使用を検出
 - `any[]`, `Promise<any>`, `Record<string, any>` なども対象
 - `// @ts-ignore`, `// @ts-expect-error` の使用も確認
+- `as Type` による型アサーションを検出（`as const` は除外）
+- ダブルアサーション（`as unknown as T`）を検出
+
+**as が許容されるケース（例外）**:
+- `as const` は常に許可（リテラル型への変換）
+- テストコードでのモック（`.test.ts`, `.spec.ts` 内）
+- DOM API の型絞り込み（条件付き、コメント必須）
+- 外部ライブラリの型不備（条件付き、コメント必須）
 
 **修正提案**:
 - `unknown` への置き換え
 - ジェネリクス型の使用
 - 適切な型定義の作成
 - 型ガードの使用
+- `satisfies` 演算子の使用（TypeScript 4.9+）
+- バリデーションライブラリ（Zod など）の使用
 
 ### 2. 必ずCIで品質チェックを行うようにする
 
@@ -329,18 +343,25 @@ repos:
 
 ## 詳細
 
-### ❌ 1. TypeScriptにおいてanyは使わない
+### ❌ 1. TypeScriptにおいてanyとasは極力使わない
 **ステータス**: 不合格
-**違反箇所**: 3件
+**違反箇所**: 5件
 
+#### any の使用
 - `src/utils/api.ts:15` - `any` の使用を検出
 - `src/components/Form.tsx:42` - `Record<string, any>` の使用を検出
 - `src/hooks/useData.ts:8` - `Promise<any>` の使用を検出
+
+#### as の使用
+- `src/services/auth.ts:23` - `as User` の使用を検出
+- `src/utils/parser.ts:31` - `as unknown as Config` のダブルアサーションを検出
 
 **修正提案**:
 - `src/utils/api.ts:15` - `unknown` または適切な型定義を使用してください
 - `src/components/Form.tsx:42` - `Record<string, FormValue>` のような具体的な型を使用してください
 - `src/hooks/useData.ts:8` - 戻り値の型を明示的に定義してください
+- `src/services/auth.ts:23` - 型ガード関数を作成し、`if` チェックで型を絞り込んでください
+- `src/utils/parser.ts:31` - Zod などのバリデーションライブラリを使用するか、`satisfies` 演算子を検討してください
 
 ### ✅ 2. 必ずCIで品質チェックを行うようにする
 **ステータス**: 合格
@@ -410,8 +431,9 @@ repos:
 
 **自動修正可能な項目**:
 
-1. **TypeScriptのany使用**
+1. **TypeScriptのany・as使用**
    - 文脈に応じて `unknown`、ジェネリクス、適切な型定義への置き換えを提案
+   - `as Type` は型ガード関数、`satisfies` 演算子、バリデーションライブラリへの置き換えを提案
 
 2. **依存関係のバージョン固定**
    - `^` や `~` を削除した固定バージョンへの変更を提案
@@ -457,7 +479,7 @@ repos:
 
 より詳細なルールとベストプラクティスについては、以下のリファレンスを参照してください：
 
-- [TypeScript ルール詳細](./references/typescript-rules.md)
+- [TypeScript ルール詳細（any・as使用制限）](./references/typescript-rules.md)
 - [Conventional Commit 規約詳細](./references/commit-conventions.md)
 - [ユニットテスト ルール詳細](./references/unit-test-rules.md)
 - [Pre-commit フック設定詳細](./references/pre-commit-rules.md)
