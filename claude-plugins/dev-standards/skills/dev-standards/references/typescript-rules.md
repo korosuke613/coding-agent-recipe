@@ -1,4 +1,4 @@
-# TypeScript ルール詳細: any 禁止
+# TypeScript ルール詳細: any と as の使用制限
 
 ## なぜ any を使わないのか
 
@@ -8,6 +8,27 @@
 2. **IDE サポートの低下**: 自動補完やリファクタリング機能が効かなくなる
 3. **保守性の低下**: コードの意図が不明確になり、他の開発者が理解しにくくなる
 4. **バグの増加**: 型による保護がなくなり、予期しないバグが発生しやすくなる
+
+## なぜ as を極力使わないのか
+
+`as` による型アサーションは、コンパイラの型チェックを無視して強制的に型を指定する機能であり、以下の問題を引き起こします：
+
+1. **型安全性の喪失**: コンパイラの型チェックを無視し、実行時エラーの原因となる
+2. **リファクタリング耐性の低下**: 型が変更されても `as` 部分は自動的に検出されない
+3. **潜在的なバグの隠蔽**: 型の不整合が見えにくくなる
+4. **コードの意図が不明確**: なぜ型アサーションが必要なのかが分かりにくい
+
+### as が許容されるケース（例外）
+
+| ケース | 許容度 | 条件 |
+|--------|--------|------|
+| `as const` | 推奨 | 常に許可（リテラル型への変換） |
+| テストコードでのモック | 許可 | `.test.ts`, `.spec.ts` ファイル内のみ |
+| DOM API の型絞り込み | 条件付き | 型ガードが使えない場合のみ |
+| 外部ライブラリの型不備 | 条件付き | コメントで理由を明記 |
+| 型推論の限界 | 条件付き | コメントで理由を明記 |
+| `as any` | 禁止 | 例外なし |
+| ダブルアサーション (`as unknown as T`) | 禁止 | 例外なし（テストコード除く） |
 
 ## any を検出するパターン
 
@@ -44,6 +65,46 @@ const value = obj.property;
 const result = dangerousOperation();
 ```
 
+## as を検出するパターン
+
+### 基本的な as Type の使用
+
+```typescript
+// ❌ 悪い例
+const user = response as User;
+const data = JSON.parse(str) as Config;
+const element = document.getElementById('app') as HTMLDivElement;
+```
+
+### ダブルアサーション
+
+```typescript
+// ❌ 特に危険な例
+const data = response as unknown as User;
+const value = obj as any as SpecificType;
+```
+
+### 許容される as の使用
+
+```typescript
+// ✅ as const は推奨
+const colors = ['red', 'green', 'blue'] as const;
+const config = { mode: 'production' } as const;
+
+// ✅ テストコードでのモック（.test.ts, .spec.ts 内）
+const mockService = {
+  fetch: jest.fn()
+} as unknown as ApiService;
+
+// ⚠️ DOM API（条件付き許容）
+// 型ガードが使えない場合のみ、コメントで理由を明記
+const element = document.getElementById('app') as HTMLDivElement; // getElementById は null を返す可能性がある
+
+// ⚠️ 外部ライブラリの型不備（条件付き許容）
+// FIXME: ライブラリの型定義が不完全なため一時的に as を使用
+const result = externalLib.call() as ExpectedType;
+```
+
 ## Grep パターン
 
 以下のパターンで any の使用を検出できます：
@@ -68,11 +129,30 @@ grep -r " as any" --include="*.ts" --include="*.tsx"
 grep -r "@ts-ignore\|@ts-expect-error" --include="*.ts" --include="*.tsx"
 ```
 
+以下のパターンで as Type の使用を検出できます：
+
+```bash
+# 基本的な as Type の検出（as const を除外）
+grep -r " as [A-Z][a-zA-Z]*" --include="*.ts" --include="*.tsx" | grep -v " as const"
+
+# ダブルアサーションの検出
+grep -r " as unknown as \| as any as " --include="*.ts" --include="*.tsx"
+
+# テストファイルを除外して as を検出
+grep -r " as [A-Z][a-zA-Z]*" --include="*.ts" --include="*.tsx" | grep -v ".test.ts\|.spec.ts\|__tests__"
+```
+
 Grep ツールを使用する場合：
 
 ```typescript
-// pattern パラメータの例
+// any 検出用 pattern パラメータの例
 "(: any\\b|: any\\[\\]|Promise<any>|Record<[^,]+, any>| as any|@ts-ignore|@ts-expect-error)"
+
+// as Type 検出用 pattern パラメータの例（as const を除外）
+" as (?!const\\b)[A-Z][a-zA-Z]+"
+
+// ダブルアサーション検出用 pattern パラメータの例
+" as (unknown|any) as "
 ```
 
 ## any の代替パターン
@@ -242,23 +322,32 @@ type ReadonlyUser = Readonly<User>;
 type UserRecord = Record<string, User>;
 ```
 
-### 6. 型アサーションは慎重に使用する
+### 6. 型アサーション（as）は極力使用しない
 
-`as` を使う場合は、型を明示的に指定します。
+`as` を使わずに型安全性を確保する方法を優先します。
+
+#### 代替パターン一覧
+
+| 現在のパターン | 推奨される代替 |
+|----------------|----------------|
+| `response as User` | 型ガード関数 + `if` チェック |
+| `JSON.parse(str) as Config` | Zod/io-ts などのバリデーションライブラリ |
+| `obj as Config` | `satisfies` 演算子（TypeScript 4.9+） |
+| `fetch().json() as T` | ジェネリクス関数 `fetchJson<T>()` |
+| `value as unknown as T` | 型ガード + 段階的な型絞り込み |
+
+#### 型ガード関数で置き換える
 
 ```typescript
 // ❌ 悪い例
-const data = response as any;
+const data = response as ApiData;
 
-// ✅ 良い例
+// ✅ 良い例：型ガードで安全に型を絞り込む
 interface ApiData {
   id: number;
   name: string;
 }
 
-const data = response as ApiData;
-
-// さらに良い例：型ガードと組み合わせる
 function isApiData(value: unknown): value is ApiData {
   return (
     typeof value === 'object' &&
@@ -274,6 +363,71 @@ const response: unknown = await fetch('/api').then(r => r.json());
 if (isApiData(response)) {
   console.log(response.name); // 型安全
 }
+```
+
+#### satisfies 演算子を使用する（TypeScript 4.9+）
+
+```typescript
+// ❌ 悪い例
+const config = {
+  apiUrl: 'https://api.example.com',
+  timeout: 5000
+} as Config;
+
+// ✅ 良い例：satisfies で型チェックしつつリテラル型を保持
+interface Config {
+  apiUrl: string;
+  timeout: number;
+}
+
+const config = {
+  apiUrl: 'https://api.example.com',
+  timeout: 5000
+} satisfies Config;
+
+// satisfies の利点：型チェックされつつ、リテラル型が保持される
+config.apiUrl; // 型は 'https://api.example.com'（リテラル型）
+```
+
+#### バリデーションライブラリを使用する
+
+```typescript
+// ❌ 悪い例
+const data = JSON.parse(str) as Config;
+
+// ✅ 良い例：Zod でランタイム検証
+import { z } from 'zod';
+
+const ConfigSchema = z.object({
+  apiUrl: z.string().url(),
+  timeout: z.number().positive()
+});
+
+type Config = z.infer<typeof ConfigSchema>;
+
+const data = ConfigSchema.parse(JSON.parse(str)); // 実行時にも型チェック
+```
+
+#### ジェネリクス関数を使用する
+
+```typescript
+// ❌ 悪い例
+const user = await fetch('/api/user').then(r => r.json()) as User;
+
+// ✅ 良い例：型安全な fetch ヘルパー関数
+async function fetchJson<T>(
+  url: string,
+  validator: (data: unknown) => data is T
+): Promise<T> {
+  const response = await fetch(url);
+  const data: unknown = await response.json();
+  if (!validator(data)) {
+    throw new Error('Invalid data format');
+  }
+  return data;
+}
+
+const user = await fetchJson('/api/user', isUser);
 ```
 
 ## 特殊なケース
@@ -358,24 +512,70 @@ function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
 
 ## ESLint ルール
 
-`eslint-plugin-typescript` を使用して any の使用を防止できます。
+`@typescript-eslint` を使用して any と as の使用を防止できます。
 
 ```json
 {
   "rules": {
+    // any 禁止ルール
     "@typescript-eslint/no-explicit-any": "error",
     "@typescript-eslint/no-unsafe-assignment": "error",
     "@typescript-eslint/no-unsafe-member-access": "error",
     "@typescript-eslint/no-unsafe-call": "error",
-    "@typescript-eslint/no-unsafe-return": "error"
+    "@typescript-eslint/no-unsafe-return": "error",
+
+    // as 使用制限ルール
+    "@typescript-eslint/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "never"
+      }
+    ]
   }
 }
+```
+
+### consistent-type-assertions ルールのオプション
+
+`as` を完全に禁止せず、段階的に導入する場合：
+
+```json
+{
+  "rules": {
+    "@typescript-eslint/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "as",
+        "objectLiteralTypeAssertions": "never"
+      }
+    ]
+  }
+}
+```
+
+テストファイルでは `as` を許可する場合（.eslintrc.js）：
+
+```javascript
+module.exports = {
+  overrides: [
+    {
+      files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts'],
+      rules: {
+        '@typescript-eslint/consistent-type-assertions': 'off'
+      }
+    }
+  ]
+};
 ```
 
 ## まとめ
 
 - `any` は型安全性を失わせる最も危険なパターン
+- `as` はコンパイラの型チェックを無視するため、極力使用を避ける
 - `unknown` を使い、型ガードで安全に処理する
+- `satisfies` 演算子で型チェックしつつリテラル型を保持する
 - ジェネリクスで型を引数として扱う
 - 適切な型定義を作成し、型の恩恵を最大限に活用する
+- バリデーションライブラリ（Zod など）でランタイム検証を行う
 - ツール（ESLint, Zod など）を活用して、型安全なコードを維持する
+- `as const` は推奨、テストコードでの `as` は許容
