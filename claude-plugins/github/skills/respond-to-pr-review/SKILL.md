@@ -1,7 +1,7 @@
 ---
 name: respond-to-pr-review
 description: GitHub Pull Requestのレビューコメントに効率的に対応するスキル。「レビュー対応して」「PRレビューコメントに返信」「レビュー指摘を修正」などの自然言語リクエストや、PRリンク（github.com/.../pull/123）を含むリクエストでトリガーされる。トリガーキーワード：レビュー対応、PRレビューコメント、レビュー指摘、review response、respond to review。
-allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*:*), Bash(gh pr view:*), Bash(git:*), Read, Edit, Glob, Grep
+allowed-tools: Bash(./scripts/*:*), Bash(gh pr view:*), Bash(git:*), Read, Edit, Glob, Grep
 ---
 
 # Respond to PR Review
@@ -10,9 +10,29 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/scripts/*:*), Bash(gh pr view:*), Bash
 
 GitHub Pull Requestのレビューコメントに対して、適切な判断と返信を行い、スレッドをresolveするまでの一連のワークフローをサポートするスキル。
 
+## 重要: GitHub API直接呼び出しの禁止
+
+**以下のコマンドは絶対に使用しないこと：**
+
+```bash
+# 禁止: gh api を直接使用
+gh api /repos/{owner}/{repo}/pulls/{pr_number}/comments
+gh api graphql -f query="..."
+gh api /repos/{owner}/{repo}/pulls/comments/{comment_id}/replies -X POST
+
+# 代わりに: 必ず ./scripts/ 配下のスクリプトを使用する
+./scripts/get-review-comments.sh owner repo 123
+./scripts/reply-to-comment.sh owner repo 123 comment_id "返信内容"
+```
+
+**理由：**
+- スクリプトはエラーハンドリング、入力検証、出力整形を含む
+- API仕様の変更時にスクリプトのみ修正すれば対応可能
+- 一貫した出力形式でワークフローの自動化が容易
+
 ## 利用可能なスクリプト
 
-このスキルでは、`${CLAUDE_PLUGIN_ROOT}/scripts/` 配下の以下のスクリプトを使用する：
+このスキルでは、`./scripts/` 配下の以下のスクリプトを使用する：
 
 | スクリプト | 役割 |
 |-----------|------|
@@ -30,7 +50,7 @@ PR URLからリポジトリ情報を抽出する。
 
 ```bash
 # PR URLをパース
-${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
+./scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
 # Output: {"owner": "owner", "repo": "repo", "pr_number": 123}
 ```
 
@@ -40,10 +60,10 @@ PRのレビューコメントを取得し、内容を確認する。
 
 ```bash
 # 詳細なJSON形式で取得
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh owner repo 123
+./scripts/get-review-comments.sh owner repo 123
 
 # 簡潔なサマリー形式で取得
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh owner repo 123 --format=summary
+./scripts/get-review-comments.sh owner repo 123 --format=summary
 ```
 
 各コメントについて以下を確認：
@@ -132,7 +152,7 @@ git push origin <branch_name>
 
 ```bash
 # コメントに返信（コメントIDを使用）
-${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh owner repo 123 <comment_id> "返信内容"
+./scripts/reply-to-comment.sh owner repo 123 <comment_id> "返信内容"
 ```
 
 ### Step 6: レビュースレッドをresolve
@@ -141,16 +161,16 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh owner repo 123 <comment_id> "�
 
 ```bash
 # スレッド情報を取得
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh owner repo 123
+./scripts/get-review-threads.sh owner repo 123
 
 # 未解決のスレッドのみ取得
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh owner repo 123 --unresolved-only
+./scripts/get-review-threads.sh owner repo 123 --unresolved-only
 
 # スレッドをresolve（単一）
-${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
+./scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
 
 # スレッドを一括resolve（複数）
-${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_e" "PRRT_kwDOQ8GWfs5p4t_h" "PRRT_kwDOQ8GWfs5p4t_j"
+./scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_e" "PRRT_kwDOQ8GWfs5p4t_h" "PRRT_kwDOQ8GWfs5p4t_j"
 ```
 
 ## ベストプラクティス

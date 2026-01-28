@@ -13,7 +13,7 @@ PRレビュー対応で使用するシェルスクリプトの詳細な使用例
 ### 基本的な使用方法
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4"
+./scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4"
 ```
 
 出力：
@@ -29,17 +29,17 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/korosuke613/my
 
 ```bash
 # HTTPSプレフィックス付き
-${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
+./scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123"
 
 # プレフィックスなし
-${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "github.com/owner/repo/pull/123"
+./scripts/parse-pr-url.sh "github.com/owner/repo/pull/123"
 ```
 
 ### シェル変数への代入
 
 ```bash
 # jqで各フィールドを抽出
-pr_info=$(${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123")
+pr_info=$(./scripts/parse-pr-url.sh "https://github.com/owner/repo/pull/123")
 owner=$(echo "$pr_info" | jq -r '.owner')
 repo=$(echo "$pr_info" | jq -r '.repo')
 pr_number=$(echo "$pr_info" | jq -r '.pr_number')
@@ -50,7 +50,7 @@ pr_number=$(echo "$pr_info" | jq -r '.pr_number')
 ### 詳細なJSON形式
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4
+./scripts/get-review-comments.sh korosuke613 mynewshq 4
 ```
 
 出力例：
@@ -70,7 +70,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4
 ### サマリー形式
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4 --format=summary
+./scripts/get-review-comments.sh korosuke613 mynewshq 4 --format=summary
 ```
 
 出力例：
@@ -84,7 +84,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh korosuke613 mynewshq 4 --fo
 ### 基本的な返信
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567890 "修正しました (13bf420)
+./scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567890 "修正しました (13bf420)
 
 try-catchでエラーハンドリングを追加し、ラベル追加が失敗してもDiscussion URLを正常に返すようにしました。"
 ```
@@ -92,7 +92,7 @@ try-catchでエラーハンドリングを追加し、ラベル追加が失敗�
 ### ヒアドキュメントを使った複数行の返信
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567891 "$(cat <<'EOF'
+./scripts/reply-to-comment.sh korosuke613 mynewshq 4 1234567891 "$(cat <<'EOF'
 この件は対応しません
 
 **理由：**
@@ -110,7 +110,7 @@ EOF
 ### 全スレッドを取得
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4
+./scripts/get-review-threads.sh korosuke613 mynewshq 4
 ```
 
 出力例：
@@ -130,7 +130,7 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4
 ### 未解決のスレッドのみ取得
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4 --unresolved-only
+./scripts/get-review-threads.sh korosuke613 mynewshq 4 --unresolved-only
 ```
 
 ## スレッドのresolve
@@ -138,13 +138,13 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh korosuke613 mynewshq 4 --unr
 ### 単一スレッドをresolve
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
+./scripts/resolve-threads.sh "PRRT_kwDOQ8GWfs5p4t_j"
 ```
 
 ### 複数スレッドを一括resolve
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh \
+./scripts/resolve-threads.sh \
   "PRRT_kwDOQ8GWfs5p4t_e" \
   "PRRT_kwDOQ8GWfs5p4t_h" \
   "PRRT_kwDOQ8GWfs5p4t_j"
@@ -180,7 +180,7 @@ Resolved 3 thread(s) successfully.
 ### 1. PR URLからリポジトリ情報を取得
 
 ```bash
-pr_info=$(${CLAUDE_PLUGIN_ROOT}/scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4")
+pr_info=$(./scripts/parse-pr-url.sh "https://github.com/korosuke613/mynewshq/pull/4")
 owner=$(echo "$pr_info" | jq -r '.owner')
 repo=$(echo "$pr_info" | jq -r '.repo')
 pr_number=$(echo "$pr_info" | jq -r '.pr_number')
@@ -189,7 +189,7 @@ pr_number=$(echo "$pr_info" | jq -r '.pr_number')
 ### 2. レビューコメントを確認
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/get-review-comments.sh "$owner" "$repo" "$pr_number" --format=summary
+./scripts/get-review-comments.sh "$owner" "$repo" "$pr_number" --format=summary
 ```
 
 ### 3. コード修正（必要に応じて）
@@ -206,18 +206,18 @@ git push origin feature-branch
 ### 4. 各コメントに返信
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567890 "修正しました (abc1234)"
-${CLAUDE_PLUGIN_ROOT}/scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567891 "この件は対応しません。理由は..."
+./scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567890 "修正しました (abc1234)"
+./scripts/reply-to-comment.sh "$owner" "$repo" "$pr_number" 1234567891 "この件は対応しません。理由は..."
 ```
 
 ### 5. スレッドをresolve
 
 ```bash
 # 未解決スレッドのIDを取得
-thread_ids=$(${CLAUDE_PLUGIN_ROOT}/scripts/get-review-threads.sh "$owner" "$repo" "$pr_number" --unresolved-only | jq -r '.threadId')
+thread_ids=$(./scripts/get-review-threads.sh "$owner" "$repo" "$pr_number" --unresolved-only | jq -r '.threadId')
 
 # 一括resolve
-${CLAUDE_PLUGIN_ROOT}/scripts/resolve-threads.sh $thread_ids
+./scripts/resolve-threads.sh $thread_ids
 ```
 
 ## トラブルシューティング
