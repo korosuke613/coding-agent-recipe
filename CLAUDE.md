@@ -95,7 +95,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   └── github/         # GitHubプラグイン
 │       ├── .claude-plugin/plugin.json
 │       └── skills/
-│           └── respond-to-pr-review/
+│           └── pr-respond/
 │               ├── SKILL.md
 │               └── references/
 │                   └── github-api-examples.md
@@ -176,19 +176,19 @@ Claude Codeプラグインの陳腐化をチェックし、最新仕様との差
   - `--fix` フラグで自動修正提案を表示
   - `--typescript`, `--ci`, `--dependencies`, `--commit`, `--local-test`, `--unit-test`, `--pre-commit` などのオプションで特定のルールのみチェック可能
 
-### `respond-to-pr-review`
-GitHub Pull Requestのレビューコメントに効率的に対応するスキル
+### `pr-respond`
+PRにレビューコメントが付いたら呼び出す。レビュー対応、返信作成、スレッドresolveまで一貫してサポート。
 - 種類: プラグインスキル（配布）
 - プラグイン: `github`
-- 実装ファイル: `claude-plugins/github/skills/respond-to-pr-review/SKILL.md`
+- 実装ファイル: `claude-plugins/github/skills/pr-respond/SKILL.md`
 - 機能: PRレビュー対応の一連のワークフローをサポート
   1. レビューコメントの取得と確認
   2. 対応判断（対応すべきか、しないかの基準）
   3. 必要に応じてコードを修正
   4. 各コメントへの返信作成
   5. レビュースレッドのresolve
-- トリガー条件: PRレビュー対応、レビューコメント返信、レビュー指摘への対応時
-- 参考資料: `claude-plugins/github/skills/respond-to-pr-review/references/github-api-examples.md`
+- トリガー条件: 「レビュー対応して」「PRレビューに返信」で起動
+- 参考資料: `claude-plugins/github/skills/pr-respond/references/github-api-examples.md`
 
 ## コミット規約
 
