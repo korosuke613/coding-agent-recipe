@@ -1,10 +1,10 @@
 ---
-name: respond-to-pr-review
-description: GitHub Pull Requestのレビューコメントに効率的に対応するスキル。「レビュー対応して」「PRレビューコメントに返信」「レビュー指摘を修正」などの自然言語リクエストや、PRリンク（github.com/.../pull/123）を含むリクエストでトリガーされる。トリガーキーワード：レビュー対応、PRレビューコメント、レビュー指摘、review response、respond to review。
+name: pr-respond
+description: PRにレビューコメントが付いたら呼び出す。レビュー対応、返信作成、スレッドresolveまで一貫してサポート。「レビュー対応して」「PRレビューに返信」で起動。
 allowed-tools: Bash(./scripts/*:*), Bash(gh pr view:*), Bash(git:*), Read, Edit, Glob, Grep
 ---
 
-# Respond to PR Review
+# PR Respond
 
 ## 概要
 
