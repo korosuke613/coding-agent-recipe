@@ -18,7 +18,7 @@
     "github@korosuke613": true
   },
   "extraKnownMarketplaces": {
-    "local": {
+    "korosuke613": {
       "source": {
         "source": "directory",
         "path": "./"
