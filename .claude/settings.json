@@ -10,18 +10,19 @@
     ],
     "deny": []
   },
+  "enabledPlugins": {
+    "git@korosuke613": true,
+    "security@korosuke613": true,
+    "doc@korosuke613": true,
+    "engineer@korosuke613": true,
+    "github@korosuke613": true
+  },
   "extraKnownMarketplaces": {
-    "korosuke613": {
+    "local": {
       "source": {
         "source": "directory",
         "path": "./"
       }
     }
-  },
-  "enabledPlugins": {
-    "git@korosuke613": true,
-    "security@korosuke613": true,
-    "doc@korosuke613": true,
-    "engineer@korosuke613": true
   }
 }
