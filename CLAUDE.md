@@ -95,10 +95,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │   └── github/         # GitHubプラグイン
 │       ├── .claude-plugin/plugin.json
 │       └── skills/
-│           └── pr-respond/
+│           ├── pr-respond/
+│           │   ├── SKILL.md
+│           │   └── references/
+│           │       └── github-api-examples.md
+│           └── review-actions-workflow/
 │               ├── SKILL.md
 │               └── references/
-│                   └── github-api-examples.md
+│                   ├── security-checks.md
+│                   ├── best-practices.md
+│                   ├── performance-checks.md
+│                   ├── maintainability-checks.md
+│                   └── technic-case-function.md
 ├── .devcontainer/      # Development Container設定
 │   ├── devcontainer.json     # VSCode devcontainer設定
 │   ├── Dockerfile            # コンテナ環境定義（Squidプロキシ対応）
@@ -189,6 +197,23 @@ PRにレビューコメントが付いたら呼び出す。レビュー対応、
   5. レビュースレッドのresolve
 - トリガー条件: 「レビュー対応して」「PRレビューに返信」で起動
 - 参考資料: `claude-plugins/github/skills/pr-respond/references/github-api-examples.md`
+
+### `review-actions-workflow`
+GitHub Actionsワークフローをレビューし、改善提案を行うスキル。
+- 種類: プラグインスキル（配布）
+- プラグイン: `github`
+- 実装ファイル: `claude-plugins/github/skills/review-actions-workflow/SKILL.md`
+- 機能: 4つの観点からワークフローをレビュー
+  1. セキュリティ（SHA固定、permissions最小化、スクリプトインジェクション対策等）
+  2. ベストプラクティス（キャッシュ活用、マトリックスビルド、Reusable Workflows等）
+  3. パフォーマンス（並列実行、concurrency設定、timeout-minutes設定等）
+  4. 保守性・可読性（命名規則、環境変数管理、ファイル分割等）
+- トリガー条件: 「ワークフローをレビューして」「GitHub Actionsをチェック」で起動
+- 参考資料:
+  - `claude-plugins/github/skills/review-actions-workflow/references/security-checks.md`
+  - `claude-plugins/github/skills/review-actions-workflow/references/best-practices.md`
+  - `claude-plugins/github/skills/review-actions-workflow/references/performance-checks.md`
+  - `claude-plugins/github/skills/review-actions-workflow/references/maintainability-checks.md`
 
 ## コミット規約
 
