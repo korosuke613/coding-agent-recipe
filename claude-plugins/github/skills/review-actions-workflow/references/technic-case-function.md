@@ -93,7 +93,7 @@ ${{ case(inputs.comment_url != '', format('元のコメント: {0}', inputs.comm
 - 可読性が高い
 - falsy値でも正しく動作
 
-### シェルスクリプト内の条件分岐
+### シェルスクリプト内の条件分岐（値の選択）
 
 **従来の方法:**
 ```yaml
@@ -111,6 +111,119 @@ env:
   FLAG: ${{ case(github.event_name == 'workflow_dispatch', '--some-option', '') }}
 run: |
   some-command $FLAG
+```
+
+### bashのif文を簡素化できるパターン
+
+#### パターン1: ステップレベルif条件への移動
+
+bashスクリプト内でGitHub Actions式を使った条件分岐を行っている場合、ステップの`if`条件に移動できることがあります。
+
+**従来の方法（非推奨）:**
+```yaml
+- name: Add label to PR
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+      gh pr edit ${{ github.event.number }} --add-label 'needs-review'
+    else
+      echo "Skipping label update (not a pull request)"
+    fi
+```
+
+**改善案（推奨）:**
+```yaml
+- name: Add label to PR
+  if: github.event_name == 'pull_request'
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    gh pr edit ${{ github.event.number }} --add-label 'needs-review'
+```
+
+**メリット:**
+- bashのif文が不要になる
+- GitHub Actionsのネイティブな条件分岐で意図が明確
+- ステップがスキップされた理由がUIで確認しやすい
+- bashのクォート処理が不要
+
+#### パターン2: case関数で値分岐を簡素化
+
+bashのif-else文が単純に値を分岐させているだけの場合、case関数を使って簡潔に記述できます。
+
+**従来の方法（非推奨）:**
+```yaml
+- name: Visual regression testing
+  run: |
+    if [[ -z "${{ steps.changed-files.outputs.contents_all_changed }}" ]]; then
+      # コンテンツの変更がない
+      pnpm run vrt:regression --grep="update dependencies"
+    else
+      # コンテンツの変更がある
+      pnpm run vrt:regression --grep="add contents"
+    fi
+```
+
+**改善案（推奨）:**
+```yaml
+- name: Visual regression testing
+  run: |
+    pnpm run vrt:regression --grep="${{
+      case(
+        steps.changed-files.outputs.contents_all_changed != '',
+        'add contents',
+        'update dependencies'
+      )
+    }}"
+```
+
+**メリット:**
+- コマンド引数の値選択が一目で分かる
+- if-else文のネストが減り可読性向上
+- コメントなしでも意図が明確
+
+#### パターン3: 複数条件での値分岐
+
+**従来の方法（非推奨）:**
+```yaml
+- name: Select environment
+  run: |
+    if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+      ENV="production"
+    elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+      ENV="staging"
+    else
+      ENV="development"
+    fi
+    deploy.sh --env $ENV
+```
+
+**改善案（推奨）:**
+```yaml
+- name: Select environment
+  env:
+    DEPLOY_ENV: ${{
+      case(
+        github.ref == 'refs/heads/main', 'production',
+        github.ref == 'refs/heads/staging', 'staging',
+        'development'
+      )
+    }}
+  run: |
+    deploy.sh --env $DEPLOY_ENV
+```
+
+### 検出パターン
+
+bashのif文簡素化の候補を検出するには：
+
+```bash
+# パターン1: GitHub Actions式を使ったbashのif文
+grep -nE 'if \[\[.*\$\{\{.*\}\}.*\]\];' .github/workflows/*.yml
+
+# パターン2: 値分岐だけのif-else文（要目視確認）
+grep -A5 'run: |' .github/workflows/*.yml | grep -E '(if \[\[|else|fi)'
 ```
 
 ## 適用範囲

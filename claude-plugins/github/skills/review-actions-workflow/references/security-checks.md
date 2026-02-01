@@ -2,7 +2,29 @@
 
 GitHub Actionsワークフローにおけるセキュリティリスクと対策を詳細に解説する。
 
-## 1. Third-partyアクションのリスクと対策
+## チェック項目の分類
+
+### review-actions-workflowスキルでチェックする項目
+
+以下の項目は本スキルで自動チェックします：
+- スクリプトインジェクション対策
+- pull_request_targetの安全性
+- シークレット管理
+
+### linterでチェック推奨の項目
+
+以下の項目はlinter（actionlint等）でチェックすることを推奨します：
+- SHA固定（Third-partyアクションのコミットハッシュ固定）
+- @main/@master参照の回避
+- permissions最小化
+
+これらの項目は静的解析ツールで効率的にチェックできるため、本スキルではチェックしません。
+
+---
+
+## Linterでチェック推奨の項目
+
+### 1. Third-partyアクションのリスクと対策
 
 ### リスク
 
@@ -36,7 +58,7 @@ gh api repos/actions/checkout/git/refs/tags/v4.1.1 --jq '.object.sha'
 grep -E 'uses:\s+\w+/\w+@(v[0-9]+|main|master)' .github/workflows/*.yml
 ```
 
-## 2. @main/@master参照の危険性
+### 2. @main/@master参照の危険性
 
 ### 問題点
 
@@ -56,7 +78,7 @@ grep -E 'uses:\s+[^@]+@(main|master|HEAD)' .github/workflows/*.yml
 1. 特定バージョンのタグに変更
 2. さらにそのタグのSHAに固定
 
-## 3. permissions設定の最小化
+### 3. permissions設定の最小化
 
 ### デフォルトのリスク
 
@@ -94,7 +116,11 @@ jobs:
 grep -L 'permissions:' .github/workflows/*.yml
 ```
 
-## 4. スクリプトインジェクション対策
+---
+
+## 本スキルでチェックする項目
+
+### 1. スクリプトインジェクション対策
 
 ### リスク
 
@@ -148,7 +174,7 @@ grep -L 'permissions:' .github/workflows/*.yml
 grep -E 'run:.*\$\{\{\s*(github\.event\.(pull_request|issue|comment)\.(title|body)|github\.head_ref)' .github/workflows/*.yml
 ```
 
-## 5. pull_request_targetの安全性
+### 2. pull_request_targetの安全性
 
 ### リスク
 
@@ -207,7 +233,7 @@ jobs:
 grep -l 'pull_request_target' .github/workflows/*.yml | xargs grep -l 'head\.sha'
 ```
 
-## 6. シークレット管理
+### 3. シークレット管理
 
 ### ベストプラクティス
 
@@ -224,9 +250,12 @@ grep -E 'echo.*\$\{\{\s*secrets\.' .github/workflows/*.yml
 
 ## チェックリスト
 
+### Linterでチェック推奨
 - [ ] Third-partyアクションはSHA固定されているか
 - [ ] `@main`/`@master`参照がないか
 - [ ] `permissions`が最小限に設定されているか
+
+### 本スキルでチェック
 - [ ] ユーザー入力が環境変数経由で渡されているか
 - [ ] `pull_request_target`が安全に使用されているか
 - [ ] シークレットが不用意にログ出力されていないか

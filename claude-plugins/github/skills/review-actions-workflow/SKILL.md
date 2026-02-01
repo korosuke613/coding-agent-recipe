@@ -1,7 +1,7 @@
 ---
 name: review-actions-workflow
 description: GitHub Actionsワークフローをレビューし、セキュリティ、ベストプラクティス、パフォーマンス、保守性の観点から改善提案を行う。「ワークフローをレビューして」「GitHub Actionsをチェック」で起動。
-allowed-tools: Read, Glob, Grep
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(bash */check-workflow.sh *)
 model: opus
 context: fork
 agent: Explore
@@ -57,11 +57,11 @@ ci.ymlをレビューして
 
 | チェック項目 | 重要度 | 説明 |
 |------------|--------|------|
-| SHA固定 | 高 | Third-partyアクションがコミットハッシュで固定されているか |
-| @main/@master参照 | 高 | 不安定なブランチ参照がないか |
-| permissions最小化 | 高 | 必要最小限の権限設定か |
 | スクリプトインジェクション | 高 | ユーザー入力が安全に処理されているか |
 | pull_request_target | 高 | フォークからのPRで安全に使用されているか |
+| シークレット管理 | 高 | シークレットが安全に扱われているか |
+
+> **Note:** SHA固定、@main/@master参照、permissions最小化はlinterでチェック可能なため、このスキルではチェックしません。詳細は[references/security-checks.md](references/security-checks.md)を参照してください。
 
 詳細: [references/security-checks.md](references/security-checks.md)
 
@@ -69,13 +69,19 @@ ci.ymlをレビューして
 
 GitHub Actionsの効率的な使用パターンを確認する。
 
-| チェック項目 | 説明 |
-|------------|------|
-| キャッシュ活用 | setup-*のcacheオプション、actions/cacheの使用 |
-| マトリックスビルド | 複数環境テストの効率化 |
-| Reusable Workflows | ワークフローの再利用機会 |
-| Composite Actions | 共通ステップの切り出し機会 |
-| case関数の活用 | `&&`/`||`による三項演算子風記述のcase関数への置き換え |
+| チェック項目 | 説明 | 重要度 |
+|------------|------|--------|
+| キャッシュ活用 | setup-*のcacheオプション、actions/cacheの使用 | 中 |
+| マトリックスビルド | 複数環境テストの効率化 | 低 |
+| Reusable Workflows | ワークフローの再利用機会 | 中 |
+| Composite Actions | 共通ステップの切り出し機会 | 低 |
+| **case関数の活用** | **`&&`/`||`による三項演算子風記述のcase関数への置き換え** | **中** |
+| **bashのif文簡素化** | **GitHub Actions式を使ったbashのif文をステップレベルif条件へ移動** | **中** |
+
+> **⚠️ 重要:** case関数関連のチェックは必須です。以下の3パターンを必ず確認してください：
+> 1. GitHub Actions式での`&&`/`||`使用
+> 2. bashスクリプト内でGitHub Actions式（`${{ }}`）を使った条件分岐
+> 3. bashスクリプト内の値分岐のみのif-else文
 
 詳細: [references/best-practices.md](references/best-practices.md)、[references/technic-case-function.md](references/technic-case-function.md)
 
@@ -97,14 +103,15 @@ GitHub Actionsの効率的な使用パターンを確認する。
 
 長期的なメンテナンスを容易にする。
 
-| チェック項目 | 説明 |
-|------------|------|
-| 命名規則 | ジョブ・ステップの明確な名前 |
-| 環境変数管理 | マジックナンバーの排除 |
-| ファイル分割 | 適切な粒度での分割 |
-| コメント | 複雑な処理の説明 |
-| DRY原則 | 重複の排除 |
-| 条件式の可読性 | `&&`/`||`による暗黙的条件分岐をcase関数で明示化 |
+| チェック項目 | 説明 | 重要度 |
+|------------|------|--------|
+| 命名規則 | ジョブ・ステップの明確な名前 | 中 |
+| 環境変数管理 | マジックナンバーの排除 | 低 |
+| ファイル分割 | 適切な粒度での分割 | 低 |
+| コメント | 複雑な処理の説明 | 低 |
+| DRY原則 | 重複の排除 | 中 |
+| **条件式の可読性** | **`&&`/`||`による暗黙的条件分岐をcase関数で明示化** | **中** |
+| **bashのif文簡素化** | **ステップレベルif条件への移動、case関数での値分岐簡素化** | **中** |
 
 詳細: [references/maintainability-checks.md](references/maintainability-checks.md)、[references/technic-case-function.md](references/technic-case-function.md)
 
@@ -136,88 +143,147 @@ GitHub Actionsの効率的な使用パターンを確認する。
 
 ### セキュリティ
 
-#### [高] SHA固定されていないアクション (ci.yml:15)
+#### [高] スクリプトインジェクションのリスク (ci.yml:25)
 
 **現状:**
 ```yaml
-- uses: actions/checkout@v4
+- run: echo "PR Title: ${{ github.event.pull_request.title }}"
 ```
 
 **推奨:**
 ```yaml
-- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+- run: echo "PR Title: $PR_TITLE"
+  env:
+    PR_TITLE: ${{ github.event.pull_request.title }}
 ```
 
-**理由:** Third-partyアクションはSHA固定することで、サプライチェーン攻撃のリスクを軽減できます。
+**理由:** ユーザー入力を直接シェルコマンドに展開すると、任意のコードが実行される可能性があります。環境変数経由で渡すことで安全に処理できます。
 
 ---
 ```
 
 ## 実装の流れ
 
-### Step 1: ワークフローファイルの検出
+### 必須チェック項目
 
-```bash
-# ワークフローファイル一覧
-ls .github/workflows/*.yml 2>/dev/null || echo "No workflow files found"
+以下の全てのチェックを**必ず実行**してください。各チェックで問題が見つからなくても「なし」として記録し、レポートに反映させること。
+
+> **Note:** 各チェックは`check-workflow.sh`スクリプトで自動実行されます。スクリプトの詳細は本ファイルと同じディレクトリにあります。
+
+---
+
+### Step 1: ワークフローファイルの検出と読み込み
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --list-files`
+
+各ファイルをReadツールで読み込み、YAML構造を解析する。
+
+---
+
+### Step 2: セキュリティチェック（3項目必須）
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --security`
+
+**チェック内容：**
+1. スクリプトインジェクションリスクを検出
+2. シークレットを直接echoしているパターンを検出
+3. pull_request_targetとhead.sha参照の危険な組み合わせを検出
+
+---
+
+### Step 3: ベストプラクティスチェック（5項目必須）
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --best-practices`
+
+**チェック内容：**
+1. cache未使用のsetup-*を検出
+2. Reusable workflow使用状況
+3. 【重要】GitHub Actions式での&&/||使用を検出（case関数への置き換え候補）
+4. 【重要】bashでGitHub Actions式を使ったif文を検出（ステップレベルif条件への移動候補）
+5. 【重要】bash内の複数行runスクリプトのif文を検出（case関数への置き換え候補）
+
+---
+
+### Step 4: パフォーマンスチェック（4項目必須）
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --performance`
+
+**チェック内容：**
+1. concurrency未設定を検出
+2. timeout-minutes未設定のジョブを検出
+3. checkout最適化の確認
+4. キャッシュの保存/復元の対応確認
+
+---
+
+### Step 5: 保守性チェック（5項目必須）
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --maintainability`
+
+**チェック内容：**
+1. name未設定のステップを検出
+2. ハードコードされたバージョンを検出
+3. @main/@master参照を検出（linter推奨だが参考情報として記録）
+4. 【重要】case関数で改善可能な条件式を検出
+5. 【重要】bashスクリプト内の値分岐if-else文を検出
+
+---
+
+### Step 6: case関数適用可能性の詳細確認（必須・最重要）
+
+!`bash "${CLAUDE_PLUGIN_ROOT}/skills/review-actions-workflow/scripts/check-workflow.sh" --case-function`
+
+**⚠️ このステップは特に重要です。必ず実行してください。**
+
+case関数は以下の3つのパターンで改善効果があります：
+
+#### パターン1: GitHub Actions式での三項演算子風記述
+
+```yaml
+# 改善前
+run: echo ${{ github.event_name == 'push' && 'production' || 'staging' }}
+
+# 改善後（case関数で明示的に）
+run: echo ${{ github.event_name == 'push' && 'production' || github.event_name == 'pull_request' && 'staging' || 'development' }}
 ```
 
-### Step 2: 各ファイルの読み込みと解析
+#### パターン2: bashスクリプト内でGitHub Actions式を使った分岐
 
-各ワークフローファイルを読み込み、YAML構造を解析する。
+```yaml
+# 改善前
+run: |
+  if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+    echo "production"
+  else
+    echo "staging"
+  fi
 
-### Step 3: セキュリティチェック
-
-```bash
-# SHA固定されていないアクションを検出
-grep -nE 'uses:\s+\w+/\w+@(v[0-9]+|main|master)' .github/workflows/*.yml
-
-# permissions未設定を検出
-grep -L 'permissions:' .github/workflows/*.yml
-
-# スクリプトインジェクションリスクを検出
-grep -nE 'run:.*\$\{\{\s*github\.event\.' .github/workflows/*.yml
+# 改善後（ステップレベルif + case関数）
 ```
 
-### Step 4: ベストプラクティスチェック
+#### パターン3: 値の分岐だけのif-else文
 
-```bash
-# cache未使用のsetup-*を検出
-grep -A10 'actions/setup-node@' .github/workflows/*.yml | grep -v 'cache:'
+```yaml
+# 改善前
+run: |
+  if [[ "$ENV" == "production" ]]; then
+    URL="https://example.com"
+  elif [[ "$ENV" == "staging" ]]; then
+    URL="https://staging.example.com"
+  else
+    URL="https://dev.example.com"
+  fi
 
-# Reusable workflow使用状況
-grep 'workflow_call' .github/workflows/*.yml
-
-# &&/||による三項演算子風の記述を検出（case関数への置き換え候補）
-grep -nE '\$\{\{.*&&.*\|\|.*\}\}' .github/workflows/*.yml
+# 改善後（case関数）
 ```
 
-### Step 5: パフォーマンスチェック
+**この検出結果を基に、case関数での改善提案を必ずレポートに含めること。**
 
-```bash
-# concurrency未設定を検出
-grep -L 'concurrency:' .github/workflows/*.yml
-
-# timeout-minutes未設定を検出
-grep -B5 'runs-on:' .github/workflows/*.yml | grep -v 'timeout-minutes'
-```
-
-### Step 6: 保守性チェック
-
-```bash
-# name未設定のステップを検出
-grep -B1 '^\s*- run:' .github/workflows/*.yml | grep -v 'name:'
-
-# ハードコードされたバージョンを検出
-grep -ohE "node-version: '[0-9]+'" .github/workflows/*.yml | sort | uniq -c
-
-# &&/||による暗黙的条件分岐を検出（case関数で可読性向上の余地）
-grep -nE '\$\{\{[^}]*\s+&&\s+[^}]*\s+\|\|\s+[^}]*\}\}' .github/workflows/*.yml
-```
+---
 
 ### Step 7: レポート生成
 
-検出された問題をサマリーと詳細レポートにまとめて出力する。
+検出された全ての項目（問題なしも含む）をサマリーと詳細レポートにまとめる。
 
 ## 参考資料
 
@@ -241,3 +307,50 @@ grep -nE '\$\{\{[^}]*\s+&&\s+[^}]*\s+\|\|\s+[^}]*\}\}' .github/workflows/*.yml
 - 実行時の動作やパフォーマンスは実測が必要です
 - セキュリティの問題は特に優先して対応してください
 - 修正提案は参考情報であり、プロジェクトの要件に合わせて判断してください
+
+## チェック漏れ防止のための注意事項
+
+### 必須実行チェックリスト
+
+レビュー時に以下の全項目を実行したことを確認してください：
+
+#### セキュリティチェック（3項目）
+- [ ] スクリプトインジェクション検出
+- [ ] シークレット直接echo検出
+- [ ] pull_request_target危険パターン検出
+
+#### ベストプラクティスチェック（5項目）
+- [ ] cache未使用検出
+- [ ] reusable workflow確認
+- [ ] **【重要】GitHub Actions式での&&/||検出**
+- [ ] **【重要】bashでActions式を使ったif文検出**
+- [ ] **【重要】bash内の値分岐if-else検出**
+
+#### パフォーマンスチェック（4項目）
+- [ ] concurrency未設定検出
+- [ ] timeout-minutes未設定検出
+- [ ] checkout最適化確認
+- [ ] キャッシュ保存/復元対応確認
+
+#### 保守性チェック（5項目）
+- [ ] name未設定ステップ検出
+- [ ] ハードコードバージョン検出
+- [ ] @main/@master参照検出
+- [ ] **【重要】case関数改善可能な条件式検出**
+- [ ] **【重要】bash値分岐if-else詳細確認**
+
+### 特に注意: case関数関連チェック
+
+case関数関連のチェックは**3箇所**で実施する必要があります：
+
+1. **ベストプラクティスチェック（Step 3）** - 項目3, 4, 5
+2. **保守性チェック（Step 5）** - 項目4, 5
+3. **case関数適用可能性の詳細確認（Step 6）** ← **これが最重要**
+
+**Step 6を必ず実行し、3つのパターン全てを確認してください。**
+
+### チェック実行時の注意
+
+- 各コマンドの実行結果は、問題が見つからなくても「なし」または「✓」として記録する
+- Step 6のcase関数チェックは省略禁止
+- レポートには全てのチェック項目の結果を含める（問題なしも含む）

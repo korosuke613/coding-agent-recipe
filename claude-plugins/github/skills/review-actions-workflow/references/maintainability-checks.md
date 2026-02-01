@@ -298,6 +298,122 @@ updates:
           - "*"
 ```
 
+## 8. bashのif文簡素化
+
+### ステップレベルif条件への移動
+
+bashスクリプト内でGitHub Actions式を使った条件分岐を行っている場合、ステップの`if`条件に移動することで簡潔になります。
+
+```yaml
+# 悪い例: bashのif文で条件分岐
+- name: Add label to PR
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+      gh pr edit ${{ github.event.number }} --add-label 'needs-review'
+    else
+      echo "Skipping label update (not a pull request)"
+    fi
+
+# 良い例: ステップレベルif条件を使用
+- name: Add label to PR
+  if: github.event_name == 'pull_request'
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    gh pr edit ${{ github.event.number }} --add-label 'needs-review'
+```
+
+**メリット:**
+- bashのif文が不要
+- GitHub Actionsのネイティブな条件分岐で意図が明確
+- ステップがスキップされた理由がUIで確認しやすい
+
+### case関数で値分岐を簡素化
+
+bashのif-else文が単純に値を分岐させているだけの場合、case関数を使用します。
+
+```yaml
+# 悪い例: bashのif-elseで値を分岐
+- name: Visual regression testing
+  run: |
+    if [[ -z "${{ steps.changed-files.outputs.contents_all_changed }}" ]]; then
+      pnpm run vrt:regression --grep="update dependencies"
+    else
+      pnpm run vrt:regression --grep="add contents"
+    fi
+
+# 良い例: case関数で値を選択
+- name: Visual regression testing
+  run: |
+    pnpm run vrt:regression --grep="${{
+      case(
+        steps.changed-files.outputs.contents_all_changed != '',
+        'add contents',
+        'update dependencies'
+      )
+    }}"
+```
+
+**メリット:**
+- コマンド引数の値選択が一目で分かる
+- if-else文のネストが減り可読性向上
+- コメントなしでも意図が明確
+
+### 複数条件での環境変数設定
+
+```yaml
+# 悪い例: bashのif-elif-elseで環境変数を設定
+- name: Select environment
+  run: |
+    if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+      ENV="production"
+    elif [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+      ENV="staging"
+    else
+      ENV="development"
+    fi
+    deploy.sh --env $ENV
+
+# 良い例: case関数で環境変数を設定
+- name: Select environment
+  env:
+    DEPLOY_ENV: ${{
+      case(
+        github.ref == 'refs/heads/main', 'production',
+        github.ref == 'refs/heads/staging', 'staging',
+        'development'
+      )
+    }}
+  run: |
+    deploy.sh --env $DEPLOY_ENV
+```
+
+### 検出パターン
+
+```bash
+# GitHub Actions式を使ったbashのif文を検出
+grep -nE 'if \[\[.*\$\{\{.*\}\}.*\]\];' .github/workflows/*.yml
+
+# 値分岐だけのif-else文を検出（要目視確認）
+grep -A5 'run: |' .github/workflows/*.yml | grep -E '(if \[\[|else|fi)'
+```
+
+### 適用基準
+
+以下の場合はbashのif文簡素化を検討してください：
+
+1. **条件がGitHub Actions式のみ** - ステップレベルif条件へ移動
+2. **値の選択のみを行うif-else** - case関数を使用
+3. **環境変数の設定のみを行うif-elif-else** - case関数とenv:で管理
+
+以下の場合はbashのif文を維持してください：
+
+1. **シェルコマンドの結果を使う条件分岐** - `[ -f file.txt ]`, `$(command)`など
+2. **複数のコマンドを実行する条件分岐** - 単なる値選択ではない
+3. **動的な計算が必要** - `date`コマンド、算術演算など
+
 ## チェックリスト
 
 - [ ] すべてのジョブに明確な名前（name）が設定されているか
@@ -308,3 +424,5 @@ updates:
 - [ ] 複雑な処理にはコメントが付いているか
 - [ ] 重複するステップはComposite Actionsで共通化されているか
 - [ ] アクションのバージョンはSHA固定されているか
+- [ ] GitHub Actions式を使ったbashのif文はステップレベルif条件に移動できないか
+- [ ] 値分岐だけのbashのif-elseはcase関数で簡素化できないか
